@@ -1,4 +1,4 @@
-=== WP Authy ===
+=== Authy for WordPress ===
 Contributors: ethitter
 Tags: authentication, authy, two factor
 Requires at least: 3.5
