@@ -83,7 +83,7 @@ class Authy_WP_API {
 	}
 
 	/**
-	 *
+	 * // token must be a string because it can have leading zeros
 	 */
 	public function check_token( $id, $token ) {
 		$endpoint = sprintf( '%s/protected/json/verify/%s/%d', $this->api_endpoint, $token, $id );

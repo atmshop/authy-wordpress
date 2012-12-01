@@ -96,9 +96,9 @@ class Authy_WP {
 
 		// User settings
 		add_action( 'show_user_profile', array( $this, 'action_show_user_profile' ) );
-		// add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
+		add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
 		add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
-		// add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
+		add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
 
 		// Authentication
 		add_action( 'login_form', array( $this, 'action_login_form' ), 50 );
@@ -295,14 +295,14 @@ class Authy_WP {
 
 		<table class="form-table">
 			<tr>
-				<th><label for="phone">Mobile number</lable></th>
+				<th><label for="phone">Mobile number</label></th>
 				<td>
 					<input type="tel" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
 				</td>
 			</tr>
 
 			<tr>
-				<th><label for="phone">Country code</lable></th>
+				<th><label for="phone">Country code</label></th>
 				<td>
 					<input type="text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 				</td>
@@ -404,8 +404,46 @@ class Authy_WP {
 	/**
 	 *
 	 */
-	public function action_edit_user_profile() {
-		// If user has rights, permit them to disable Authy for a given user.
+	public function action_edit_user_profile( $user ) {
+		if ( current_user_can( 'create_users' ) ) {
+		?>
+			<h3>Authy Two-factor Authentication</h3>
+
+			<table class="form-table">
+				<?php if ( $this->user_has_authy_id( $user->ID ) ) :
+					$meta = get_user_meta( get_current_user_id(), $this->users_key, true );
+					$meta = wp_parse_args( $meta, $this->user_defaults );
+
+					$name = esc_attr( $this->users_key );
+				?>
+				<tr>
+					<th><label for="<?php echo $name; ?>">Disable user's Authy connection?</label></th>
+					<td>
+						<input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" />
+						<label for="<?php echo $name; ?>">Yes, force user to reset the Authy connection</label>
+					</td>
+				</tr>
+				<?php else : ?>
+				<tr>
+					<th>This user has not enabled Authy.</th>
+					<td></td>
+				</tr>
+				<?php endif; ?>
+			</table>
+		<?php
+
+			wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function action_edit_user_profile_update( $user_id ) {
+		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && check_admin_referer( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" ) ) {
+			if ( isset( $_POST[ $this->users_key ] ) )
+				delete_user_meta( $user_id, $this->users_key );
+		}
 	}
 
 	/**
