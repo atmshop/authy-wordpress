@@ -99,6 +99,10 @@ class Authy_WP {
 		// add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
 		add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
 		// add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
+
+		// Authentication
+		add_action( 'login_form', array( $this, 'action_login_form' ), 50 );
+		add_filter( 'authenticate', array( $this, 'action_authenticate' ), 9999, 2 );
 	}
 
 	/**
@@ -402,6 +406,51 @@ class Authy_WP {
 	 */
 	public function action_edit_user_profile() {
 		// If user has rights, permit them to disable Authy for a given user.
+	}
+
+	/**
+	 *
+	 */
+	public function action_login_form() {
+		?>
+		<p>
+			<label for="authy_token">Authy Token<br>
+			<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
+		</p>
+		<?php
+	}
+
+	/**
+	 *
+	 */
+	public function action_authenticate( $user, $username ) {
+		// If we don't have a username yet, or the method isn't supported, stop.
+		if ( empty( $username ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
+			return $user;
+
+		// Don't bother if WP can't provide a user object.
+		if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
+			return $user;
+
+		// User must opt in.
+		if ( ! $this->user_has_authy_id( $user->ID ) )
+			return $user;
+
+		// If a user has opted in, he/she must provide a token
+		if ( ! isset( $_POST['authy_token'] ) || empty( $_POST['authy_token'] ) )
+			return new WP_Error( 'authentication_failed', sprintf( __('<strong>ERROR</strong>: To log in as <strong>%s</strong>, you must provide an Authy token.'), $username ) );
+
+		// Check the specified token
+		$authy_id = $this->get_user_authy_id( $user->ID );
+		$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
+		$api_check = $this->api->check_token( $authy_id, $authy_token );
+
+		if ( false === $api_check )
+			return null;
+		elseif ( is_string( $api_check ) )
+			return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
+
+		return $user;
 	}
 }
 

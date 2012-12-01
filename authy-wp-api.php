@@ -57,15 +57,16 @@ class Authy_WP_API {
 		$country_code = preg_replace( '#[^\d\+]#', '', $country_code );
 
 		// Build API endpoint
-		$endpoint = $this->api_endpoint . '/protected/json/users/new?api_key=' . $this->api_key;
+		$endpoint = sprintf( '%s/protected/json/users/new', $this->api_endpoint );
 		$endpoint = add_query_arg( array(
+			'api_key' =>$this->api_key,
 			'user[email]' => $email,
 			'user[cellphone]' => $phone,
 			'user[country_code]' => $country_code
 		), $endpoint );
 
 		// Make API request and parse response
-		$response = wp_remote_post( $endpoint, array() );
+		$response = wp_remote_post( $endpoint );
 
 		if ( '200' == wp_remote_retrieve_response_code( $response ) ) {
 			$body = wp_remote_retrieve_body( $response );
@@ -77,6 +78,28 @@ class Authy_WP_API {
 					return $body->user->id;
 			}
 		}
+
+		return false;
+	}
+
+	/**
+	 *
+	 */
+	public function check_token( $id, $token ) {
+		$endpoint = sprintf( '%s/protected/json/verify/%s/%d', $this->api_endpoint, $token, $id );
+		$endpoint = add_query_arg( array(
+			'api_key' => $this->api_key,
+			'force' => 'true'
+		), $endpoint );
+
+		// Make API request and check responding status code
+		$response = wp_remote_head( $endpoint );
+		$status_code = wp_remote_retrieve_response_code( $response );
+
+		if ( 200 == $status_code )
+			return true;
+		elseif ( 401 == $status_code )
+			return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
 
 		return false;
 	}
