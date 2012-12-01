@@ -36,7 +36,6 @@ class Authy_WP {
 	protected $api = null;
 	protected $api_key = null;
 	protected $api_endpoint = null;
-	protected $environment = 'production';
 
 	// Commong plugin elements
 	protected $settings_page = 'authy-for-wp';
@@ -135,13 +134,13 @@ class Authy_WP {
 			'development' => 'http://sandbox-api.authy.com'
 		);
 
-		$this->environment = $this->get_setting( 'environment' );
+		$environment = $this->get_setting( 'environment' );
 
-		$api_key = $this->get_setting( 'api_key_' . $this->environment );
+		$api_key = $this->get_setting( 'api_key_' . $environment );
 
-		if ( $api_key && isset( $endpoints[ $this->environment ] ) ) {
+		if ( $api_key && isset( $endpoints[ $environment ] ) ) {
 			$this->api_key = $api_key;
-			$this->api_endpoint = $endpoints[ $this->environment ];
+			$this->api_endpoint = $endpoints[ $environment ];
 		}
 
 		$this->api = Authy_WP_API::instance( $this->api_key, $this->api_endpoint );
