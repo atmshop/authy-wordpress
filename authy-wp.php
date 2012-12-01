@@ -30,7 +30,11 @@ class Authy_WP {
 	// Oh look, a singleton
 	private static $__instance = null;
 
-	protected $admin_page = 'wp-for-authy';
+	protected $settings_page = 'authy-for-wp';
+	protected $users_page = 'authy-for-wp-user';
+
+	protected $settings_key = 'authy_for_wp';
+	protected $users_key = 'authy_for_wp_user';
 
 	/**
 	 * Singleton implementation
@@ -57,6 +61,7 @@ class Authy_WP {
 	 */
 	private function setup() {
 		// Commong plugin elements
+		add_action( 'admin_init', array( $this, 'action_admin_init' ) );
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
 	}
 
@@ -67,14 +72,37 @@ class Authy_WP {
 	/**
 	 *
 	 */
+	public function action_admin_init() {
+		register_setting( $this->settings_key, $this->settings_key, array( $this, 'validate_plugin_settings' ) );
+	}
+
+	/**
+	 *
+	 */
 	public function action_admin_menu() {
-		add_users_page( 'Authy for WP', 'Authy for WP', 'activate_plugins', $this->admin_page, array( $this, 'plugin_settings_page' ) );
+		add_options_page( 'Authy for WP', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
 	}
 
 	/**
 	 *
 	 */
 	public function plugin_settings_page() {
+		//
+	}
+
+	/**
+	 *
+	 */
+	public function validate_plugin_settings( $settings ) {
+		$settings_validated = array();
+
+		return $settings_validated;
+	}
+
+	/**
+	 *
+	 */
+	public function user_settings_page() {
 		//
 	}
 }
