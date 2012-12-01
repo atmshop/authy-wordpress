@@ -65,17 +65,21 @@ class Authy_WP_API {
 			'user[country_code]' => $country_code
 		), $endpoint );
 
-		// Make API request and parse response
-		$response = wp_remote_post( $endpoint );
+		// Make API request up to three times and parse response
+		for ( $i = 1; $i <= 3; $i++ ) {
+			$response = wp_remote_post( $endpoint );
 
-		if ( '200' == wp_remote_retrieve_response_code( $response ) ) {
-			$body = wp_remote_retrieve_body( $response );
+			if ( '200' == wp_remote_retrieve_response_code( $response ) ) {
+				$body = wp_remote_retrieve_body( $response );
 
-			if ( ! empty( $body ) ) {
-				$body = json_decode( $body );
+				if ( ! empty( $body ) ) {
+					$body = json_decode( $body );
 
-				if ( is_object( $body ) && property_exists( $body, 'user' ) && property_exists( $body->user, 'id' ) )
-					return $body->user->id;
+					if ( is_object( $body ) && property_exists( $body, 'user' ) && property_exists( $body->user, 'id' ) )
+						return $body->user->id;
+				}
+
+				break;
 			}
 		}
 
@@ -92,14 +96,16 @@ class Authy_WP_API {
 			'force' => 'true'
 		), $endpoint );
 
-		// Make API request and check responding status code
-		$response = wp_remote_head( $endpoint );
-		$status_code = wp_remote_retrieve_response_code( $response );
+		// Make API request up to three times and check responding status code
+		for ( $i = 1; $i <= 3; $i ++ ) {
+			$response = wp_remote_head( $endpoint );
+			$status_code = wp_remote_retrieve_response_code( $response );
 
-		if ( 200 == $status_code )
-			return true;
-		elseif ( 401 == $status_code )
-			return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
+			if ( 200 == $status_code )
+				return true;
+			elseif ( 401 == $status_code )
+				return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
+		}
 
 		return false;
 	}
