@@ -30,6 +30,8 @@ class Authy_WP {
 	// Oh look, a singleton
 	private static $__instance = null;
 
+	protected $admin_page = 'wp-for-authy';
+
 	/**
 	 * Singleton implementation
 	 *
@@ -53,7 +55,28 @@ class Authy_WP {
 	/**
 	 *
 	 */
-	private function setup() {}
+	private function setup() {
+		// Commong plugin elements
+		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
+	}
+
+	/**
+	 * COMMON PLUGIN ELEMENTS
+	 */
+
+	/**
+	 *
+	 */
+	public function action_admin_menu() {
+		add_users_page( 'Authy for WP', 'Authy for WP', 'activate_plugins', $this->admin_page, array( $this, 'plugin_settings_page' ) );
+	}
+
+	/**
+	 *
+	 */
+	public function plugin_settings_page() {
+		//
+	}
 }
 
 Authy_WP::instance();
