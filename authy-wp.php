@@ -281,63 +281,8 @@ class Authy_WP {
 	}
 
 	/**
-	 * USER SETTINGS PAGE
+	 * USER INFORMATION FUNCTIONS
 	 */
-
-	/**
-	 *
-	 */
-	public function action_show_user_profile() {
-		$meta = $this->get_authy_data( get_current_user_id() );
-	?>
-		<h3>Authy Two-factor Authentication</h3>
-
-		<table class="form-table">
-			<tr>
-				<th><label for="phone">Mobile number</label></th>
-				<td>
-					<input type="tel" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
-				</td>
-			</tr>
-
-			<tr>
-				<th><label for="phone">Country code</label></th>
-				<td>
-					<input type="text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
-				</td>
-			</tr>
-		</table>
-
-	<?php
-		wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' );
-	}
-
-	/**
-	 *
-	 */
-	public function action_personal_options_update( $user_id ) {
-		check_admin_referer( 'update-user_' . $user_id );
-
-		// Check if we have data to work with
-		$authy_data = isset( $_POST[ $this->users_key ] ) ? $_POST[ $this->users_key ] : false;
-
-		// Parse for nonce and API existence
-		if ( is_array( $authy_data ) && array_key_exists( 'nonce', $authy_data ) && wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
-			// Email address
-			$userdata = get_userdata( $user_id );
-			if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
-				$email = $userdata->data->user_email;
-			else
-				$email = null;
-
-			// Phone number
-			$phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
-			$country_code = preg_replace( '#[^\d\+]#', '', $authy_data['country_code'] );
-
-			// Process information with Authy
-			$this->set_authy_data( $user_id, $email, $phone, $country_code );
-		}
-	}
 
 	/**
 	 *
@@ -435,6 +380,66 @@ class Authy_WP {
 			return (int) $data['authy_id'];
 
 		return false;
+	}
+
+
+	/**
+	 * USER SETTINGS PAGES
+	 */
+
+	/**
+	 *
+	 */
+	public function action_show_user_profile() {
+		$meta = $this->get_authy_data( get_current_user_id() );
+	?>
+		<h3>Authy Two-factor Authentication</h3>
+
+		<table class="form-table">
+			<tr>
+				<th><label for="phone">Mobile number</label></th>
+				<td>
+					<input type="tel" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+				</td>
+			</tr>
+
+			<tr>
+				<th><label for="phone">Country code</label></th>
+				<td>
+					<input type="text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+				</td>
+			</tr>
+		</table>
+
+	<?php
+		wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' );
+	}
+
+	/**
+	 *
+	 */
+	public function action_personal_options_update( $user_id ) {
+		check_admin_referer( 'update-user_' . $user_id );
+
+		// Check if we have data to work with
+		$authy_data = isset( $_POST[ $this->users_key ] ) ? $_POST[ $this->users_key ] : false;
+
+		// Parse for nonce and API existence
+		if ( is_array( $authy_data ) && array_key_exists( 'nonce', $authy_data ) && wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
+			// Email address
+			$userdata = get_userdata( $user_id );
+			if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
+				$email = $userdata->data->user_email;
+			else
+				$email = null;
+
+			// Phone number
+			$phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
+			$country_code = preg_replace( '#[^\d\+]#', '', $authy_data['country_code'] );
+
+			// Process information with Authy
+			$this->set_authy_data( $user_id, $email, $phone, $country_code );
+		}
 	}
 
 	/**
