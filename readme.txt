@@ -7,7 +7,7 @@ Stable tag: 0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Add Authy Two-factor Authentication to WordPress
+Add Authy two-factor authentication to WordPress
 
 == Description ==
 
