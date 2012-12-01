@@ -33,6 +33,7 @@ class Authy_WP {
 	private $settings = null;
 
 	// Authy API
+	protected $api = null;
 	protected $api_key = null;
 	protected $api_endpoint = null;
 
@@ -51,6 +52,13 @@ class Authy_WP {
 		'sanitizer' => 'sanitize_text_field',
 		'section'  => 'default',
 		'class'    => null
+	);
+
+	protected $user_defaults = array(
+		'email'        => null,
+		'phone'        => null,
+		'country_code' => null,
+		'authy_id'     => null
 	);
 
 	/**
@@ -77,12 +85,20 @@ class Authy_WP {
 	 *
 	 */
 	private function setup() {
+		require( 'authy-wp-api.php' );
+
 		$this->register_settings_fields();
 		$this->prepare_api();
 
-		// Commong plugin elements
+		// Plugin settings
 		add_action( 'admin_init', array( $this, 'action_admin_init' ) );
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
+
+		// User settings
+		add_action( 'show_user_profile', array( $this, 'action_show_user_profile' ) );
+		// add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
+		add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
+		// add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
 	}
 
 	/**
@@ -122,6 +138,8 @@ class Authy_WP {
 			$this->api_key = $api_key;
 			$this->api_endpoint = $endpoints[ $environment ];
 		}
+
+		$this->api = Authy_WP_API::instance( $this->api_key, $this->api_endpoint );
 	}
 
 	/**
@@ -265,8 +283,125 @@ class Authy_WP {
 	/**
 	 *
 	 */
-	public function user_settings_page() {
-		//
+	public function action_show_user_profile() {
+		$meta = get_user_meta( get_current_user_id(), $this->users_key, true );
+		$meta = wp_parse_args( $meta, $this->user_defaults );
+	?>
+		<h3>Authy Two-factor Authentication</h3>
+
+		<table class="form-table">
+			<tr>
+				<th><label for="phone">Mobile number</lable></th>
+				<td>
+					<input type="tel" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+				</td>
+			</tr>
+
+			<tr>
+				<th><label for="phone">Country code</lable></th>
+				<td>
+					<input type="text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+				</td>
+			</tr>
+		</table>
+
+		<input type="hidden" name="<?php echo esc_attr( $this->users_key ); ?>[authy_id]" value="<?php echo esc_attr( $meta['authy_id'] ); ?>" />
+		<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
+	<?php
+	}
+
+	/**
+	 *
+	 */
+	public function action_personal_options_update( $user_id ) {
+		check_admin_referer( 'update-user_' . $user_id );
+
+		// Check if we have data to work with
+		$authy_data = isset( $_POST[ $this->users_key ] ) ? $_POST[ $this->users_key ] : false;
+
+		// Parse for nonce and API existence
+		if ( is_array( $authy_data ) && array_key_exists( 'nonce', $authy_data ) && wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
+			// Email address
+			$userdata = get_userdata( $user_id );
+			if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
+				$email = $userdata->data->user_email;
+			else
+				$email = null;
+
+			// Phone number
+			$phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
+			$country_code = preg_replace( '#[^\d\+]#', '', $authy_data['country_code'] );
+
+			// Process information with Authy
+			$this->set_authy_data( $user_id, $email, $phone, $country_code );
+		}
+	}
+
+	/**
+	 *
+	 */
+	public function set_authy_data( $user_id, $email, $phone, $country_code ) {
+		// Retrieve user's existing Authy ID, or get one from Authy
+		if ( $this->user_has_authy_id( $user_id ) ) {
+			$authy_id = $this->get_user_authy_id( $user_id );
+		} else {
+			// Request an Authy ID with given user information
+			$authy_id = (int) $this->api->get_id( $email, $phone, $country_code );
+
+			if ( ! $authy_id )
+				unset( $authy_id );
+		}
+
+		// Record Authy data, or clear out if empty
+		$data_sanitized = array(
+			'email'        => $email,
+			'phone'        => $phone,
+			'country_code' => $country_code
+		);
+
+		if ( isset( $authy_id ) )
+			$data_sanitized['authy_id'] = $authy_id;
+
+		$data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
+
+		if ( empty( $data_sanitized ) )
+			delete_user_meta( $user_id, $this->users_key );
+		else
+			update_user_meta( $user_id, $this->users_key, $data_sanitized );
+	}
+
+	/**
+	 * Check if a given user has an Authy ID set
+	 *
+	 * @param int $user_id
+	 * @uses this::get_user_authy_id
+	 * @return bool
+	 */
+	protected function user_has_authy_id( $user_id ) {
+		return (bool) $this->get_user_authy_id( $user_id );
+	}
+
+	/**
+	 * Retrieve a given user's Authy ID
+	 *
+	 * @param int $user_id
+	 * @uses get_user_meta
+	 * @return int|bool
+	 */
+	protected function get_user_authy_id( $user_id ) {
+		$data = get_user_meta( $user_id, $this->users_key, true );
+
+		if ( is_array( $data ) && array_key_exists( 'authy_id', $data ) )
+			return (int) $data['authy_id'];
+
+		return false;
+	}
+
+	/**
+	 *
+	 */
+	public function action_edit_user_profile() {
+		// If user has rights, permit them to disable Authy for a given user.
 	}
 }
 
