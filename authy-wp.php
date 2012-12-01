@@ -57,7 +57,7 @@ class Authy_WP {
 	protected $user_defaults = array(
 		'email'        => null,
 		'phone'        => null,
-		'country_code' => null,
+		'country_code' => '+1',
 		'authy_id'     => null
 	);
 
@@ -288,8 +288,7 @@ class Authy_WP {
 	 *
 	 */
 	public function action_show_user_profile() {
-		$meta = get_user_meta( get_current_user_id(), $this->users_key, true );
-		$meta = wp_parse_args( $meta, $this->user_defaults );
+		$meta = $this->get_authy_data( get_current_user_id() );
 	?>
 		<h3>Authy Two-factor Authentication</h3>
 
@@ -309,9 +308,8 @@ class Authy_WP {
 			</tr>
 		</table>
 
-		<input type="hidden" name="<?php echo esc_attr( $this->users_key ); ?>[authy_id]" value="<?php echo esc_attr( $meta['authy_id'] ); ?>" />
-		<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
 	<?php
+		wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' );
 	}
 
 	/**
@@ -368,10 +366,48 @@ class Authy_WP {
 
 		$data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
 
-		if ( empty( $data_sanitized ) )
+		if ( empty( $data_sanitized['phone'] ) ) {
 			delete_user_meta( $user_id, $this->users_key );
+		} else {
+			$data = get_user_meta( $user_id, $this->users_key, true );
+			if ( ! is_array( $data ) )
+				$data = array();
+
+			$data[ $this->api_key ] = $data_sanitized;
+
+			update_user_meta( $user_id, $this->users_key, $data );
+		}
+	}
+
+	/**
+	 * Retrieve a user's Authy data for a given API key
+	 *
+	 * @param int $user_id
+	 * @param string $api_key
+	 * @uses get_user_meta, wp_parse_args
+	 * @return array
+	 */
+	protected function get_authy_data( $user_id, $api_key = null ) {
+		// Bail without a valid user ID
+		if ( ! $user_id )
+			return $this->user_defaults;
+
+		// Validate API key
+		if ( is_null( $api_key ) )
+			$api_key = $this->api_key;
 		else
-			update_user_meta( $user_id, $this->users_key, $data_sanitized );
+			$api_key = preg_replace( '#[a-z0-9]#i', '', $api_key );
+
+		// Get meta, which holds all Authy data by API key
+		$data = get_user_meta( $user_id, $this->users_key, true );
+		if ( ! is_array( $data ) )
+			$data = array();
+
+		// Return data for this API, if present, otherwise return default data
+		if ( array_key_exists( $api_key, $data ) )
+			return wp_parse_args( $data[ $api_key ], $this->user_defaults );
+
+		return $this->user_defaults;
 	}
 
 	/**
@@ -389,13 +425,13 @@ class Authy_WP {
 	 * Retrieve a given user's Authy ID
 	 *
 	 * @param int $user_id
-	 * @uses get_user_meta
+	 * @uses this::get_authy_data
 	 * @return int|bool
 	 */
 	protected function get_user_authy_id( $user_id ) {
-		$data = get_user_meta( $user_id, $this->users_key, true );
+		$data = $this->get_authy_data( $user_id );
 
-		if ( is_array( $data ) && array_key_exists( 'authy_id', $data ) )
+		if ( is_array( $data ) && is_numeric( $data['authy_id'] ) )
 			return (int) $data['authy_id'];
 
 		return false;
