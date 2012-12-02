@@ -30,6 +30,7 @@ class Authy_WP {
 	// Oh look, a singleton
 	private static $__instance = null;
 
+	// Parsed settings
 	private $settings = null;
 
 	// Authy API
@@ -37,13 +38,15 @@ class Authy_WP {
 	protected $api_key = null;
 	protected $api_endpoint = null;
 
-	// Commong plugin elements
+	// Interface keys
 	protected $settings_page = 'authy-for-wp';
 	protected $users_page = 'authy-for-wp-user';
 
+	// Data storage keys
 	protected $settings_key = 'authy_for_wp';
 	protected $users_key = 'authy_for_wp_user';
 
+	// Settings field placeholders
 	protected $settings_fields = array();
 
 	protected $settings_field_defaults = array(
@@ -54,6 +57,7 @@ class Authy_WP {
 		'class'    => null
 	);
 
+	// Default Authy data
 	protected $user_defaults = array(
 		'email'        => null,
 		'phone'        => null,
@@ -106,7 +110,10 @@ class Authy_WP {
 	}
 
 	/**
+	 * Add settings fields for main plugin page
 	 *
+	 * @uses __
+	 * @return null
 	 */
 	protected function register_settings_fields() {
 		$this->settings_fields = array(
@@ -126,7 +133,10 @@ class Authy_WP {
 	}
 
 	/**
+	 * Set class variables regarding API
+	 * Instantiates the Authy API class into $this->api
 	 *
+	 * @uses this::get_setting, Authy_WP_API::instance
 	 */
 	protected function prepare_api() {
 		$endpoints = array(
@@ -134,15 +144,20 @@ class Authy_WP {
 			'development' => 'http://sandbox-api.authy.com'
 		);
 
+		// Plugin page accepts keys for production and development.
+		// Cannot be toggled except via the `authy_wp_environment` filter.
 		$environment = $this->get_setting( 'environment' );
 
+		// API key is specific to the environment
 		$api_key = $this->get_setting( 'api_key_' . $environment );
 
+		// Only prepare the API endpoint if we have all information needed.
 		if ( $api_key && isset( $endpoints[ $environment ] ) ) {
 			$this->api_key = $api_key;
 			$this->api_endpoint = $endpoints[ $environment ];
 		}
 
+		// Instantiate the API class
 		$this->api = Authy_WP_API::instance( $this->api_key, $this->api_endpoint );
 	}
 
@@ -151,22 +166,34 @@ class Authy_WP {
 	 */
 
 	/**
+	 * Register plugin's setting and validation callback
 	 *
+	 * @param action admin_init
+	 * @uses register_setting
+	 * @return null
 	 */
 	public function action_admin_init() {
 		register_setting( $this->settings_page, $this->settings_key, array( $this, 'validate_plugin_settings' ) );
+	}
+
+	/**
+	 * Register plugin settings page and page's sections
+	 *
+	 * @uses add_options_page, add_settings_section
+	 * @action admin_menu
+	 * @return null
+	 */
+	public function action_admin_menu() {
+		add_options_page( 'Authy for WP', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
 		add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
 	}
 
 	/**
+	 * Retrieve a plugin setting
 	 *
-	 */
-	public function action_admin_menu() {
-		add_options_page( 'Authy for WP', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
-	}
-
-	/**
-	 *
+	 * @param string $key
+	 * @uses get_option, wp_parse_args, apply_filters
+	 * @return array or false
 	 */
 	public function get_setting( $key ) {
 		$value = false;
@@ -191,7 +218,10 @@ class Authy_WP {
 	 */
 
 	/**
+	 * Populate settings page's sections
 	 *
+	 * @uses wp_parse_args, add_settings_field
+	 * @return null
 	 */
 	public function register_settings_page_sections() {
 		foreach ( $this->settings_fields as $args ) {
@@ -202,7 +232,11 @@ class Authy_WP {
 	}
 
 	/**
+	 * Render text input
 	 *
+	 * @param array $args
+	 * @uses wp_parse_args, esc_attr, this::get_setting, esc_attr
+	 * @return string or null
 	 */
 	public function form_field_text( $args ) {
 		$args = wp_parse_args( $args, $this->settings_field_defaults );
@@ -220,7 +254,10 @@ class Authy_WP {
 	}
 
 	/**
+	 * Render settings page
 	 *
+	 * @uses screen_icon, esc_html, get_admin_page_title, settings_fields, do_settings_sections, submit_button
+	 * @return string
 	 */
 	public function plugin_settings_page() {
 		?>
@@ -241,7 +278,11 @@ class Authy_WP {
 	}
 
 	/**
+	 * Validate plugin settings
 	 *
+	 * @param array $settings
+	 * @uses check_admin_referer, wp_parse_args, sanitize_text_field
+	 * @return array
 	 */
 	public function validate_plugin_settings( $settings ) {
 		check_admin_referer( $this->settings_page . '-options' );
@@ -285,7 +326,14 @@ class Authy_WP {
 	 */
 
 	/**
+	 * Add Authy data to a given user account
 	 *
+	 * @param int $user_id
+	 * @param string $email
+	 * @param string $phone
+	 * @param string $country_code
+	 * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, delete_user_meta, get_user_meta, update_user_meta
+	 * @return null
 	 */
 	public function set_authy_data( $user_id, $email, $phone, $country_code ) {
 		// Retrieve user's existing Authy ID, or get one from Authy
@@ -299,7 +347,7 @@ class Authy_WP {
 				unset( $authy_id );
 		}
 
-		// Record Authy data, or clear out if empty
+		// Build array of Authy data
 		$data_sanitized = array(
 			'email'        => $email,
 			'phone'        => $phone,
@@ -311,6 +359,7 @@ class Authy_WP {
 
 		$data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
 
+		// Update Authy data if sufficient information is provided, otherwise clear the option out.
 		if ( empty( $data_sanitized['phone'] ) ) {
 			delete_user_meta( $user_id, $this->users_key );
 		} else {
@@ -488,7 +537,14 @@ class Authy_WP {
 	}
 
 	/**
+	 * AUTHENTICATION CHANGES
+	 */
+
+	/**
+	 * Add Authy input field to login page
 	 *
+	 * @action login_form
+	 * @return string
 	 */
 	public function action_login_form() {
 		?>
@@ -500,7 +556,12 @@ class Authy_WP {
 	}
 
 	/**
+	 * Attempt Authy verification if conditions are met.
 	 *
+	 * @param mixed $user
+	 * @param string $username
+	 * @uses XMLRPC_REQUEST, APP_REQUEST, this::user_has_authy_id, this::get_user_authy_id, this::api::check_token
+	 * @return mixed
 	 */
 	public function action_authenticate( $user, $username ) {
 		// If we don't have a username yet, or the method isn't supported, stop.
@@ -524,6 +585,7 @@ class Authy_WP {
 		$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
 		$api_check = $this->api->check_token( $authy_id, $authy_token );
 
+		// Act on API response
 		if ( false === $api_check )
 			return null;
 		elseif ( is_string( $api_check ) )

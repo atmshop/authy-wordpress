@@ -1,7 +1,11 @@
 <?php
 /**
- * AUTHY FOR WP
- * API CLASS
+ * AUTHY FOR WP API CLASS
+ *
+ * Handles Authy API requests in a WordPress way.
+ *
+ * @package Authy for WordPress
+ * @since 0.1
  */
 
 class Authy_WP_API {
@@ -43,12 +47,18 @@ class Authy_WP_API {
 	private function __construct() {}
 
 	/**
-	 *
+	 * Really, silence is golden.
 	 */
 	private function setup() {}
 
 	/**
+	 * Attempt to retrieve an Authy ID for a given request
 	 *
+	 * @param string $email
+	 * @param string $phone
+	 * @param string $country_code
+	 * @uses sanitize_email, add_query_arg, wp_remote_post, wp_remote_retrieve_response_code, wp_remote_retrieve_body
+	 * @return int or false
 	 */
 	public function get_id( $email, $phone, $country_code ) {
 		// Sanitize arguments
@@ -87,9 +97,16 @@ class Authy_WP_API {
 	}
 
 	/**
-	 * // token must be a string because it can have leading zeros
+	 * Validate a given token and Authy ID
+	 *
+	 * @param int $id
+	 * @param string $token
+	 * @uses add_query_arg, wp_remote_head, wp_remote_retrieve_response_code
+	 * @return mixed
 	 */
 	public function check_token( $id, $token ) {
+		// Build API endpoint
+		// Token must be a string because it can have leading zeros
 		$endpoint = sprintf( '%s/protected/json/verify/%s/%d', $this->api_endpoint, $token, $id );
 		$endpoint = add_query_arg( array(
 			'api_key' => $this->api_key,
