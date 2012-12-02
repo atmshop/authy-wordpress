@@ -641,7 +641,7 @@ class Authy_WP {
 		$authy_data = $this->get_authy_data( $user_id );
 
 		// Step
-		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
+		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
 
 		// iframe head
 		?><head>
