@@ -23,13 +23,10 @@ Once users configure Authy through their WordPress user profiles, any login atte
 == Frequently Asked Questions ==
 
 = How can a user disable Authy after enabling it? =
-The user should return to his or her WordPress user profile screen and clear the values from the _phone_ and _country code_ fields under **Authy for WordPress**. After saving the changes, Authy will no longer be active on your account.
-
-In a future release, the interface and process will be improved.
+The user should return to his or her WordPress profile screen and manage connections under the section **Authy for WordPress**.
 
 = What if a user loses the mobile device? =
 Any administrator (anyone with the `create_users` capability, actually) can disable Authy on a given user account by navigating to that user's WordPress account profile, and following the instructions under **Authy for WordPress**.
-
 
 == Changelog ==
 
