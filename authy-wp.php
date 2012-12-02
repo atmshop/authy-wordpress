@@ -2,7 +2,7 @@
 /*
  * Plugin Name: Authy for WordPress
  * Plugin URI: http://www.ethitter.com/plugins/authy-for-wordpress/
- * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
+ * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress. Users opt in for an added level of security that relies on random codes from their mobile devices.
  * Author: Erick Hitter
  * Version: 0.1
  * Author URI: http://www.ethitter.com/
