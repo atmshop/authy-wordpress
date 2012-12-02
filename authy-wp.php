@@ -510,7 +510,12 @@ class Authy_WP {
 	}
 
 	/**
+	 * Allow sufficiently-priviledged users to disable another user's Authy service.
 	 *
+	 * @param object $user
+	 * @uses current_user_can, this::user_has_authy_id, get_user_meta, wp_parse_args, esc_attr, wp_nonce_field
+	 * @action edit_user_profile
+	 * @return string
 	 */
 	public function action_edit_user_profile( $user ) {
 		if ( current_user_can( 'create_users' ) ) {
@@ -545,10 +550,15 @@ class Authy_WP {
 	}
 
 	/**
+	 * Clear a user's Authy configuration if an allowed user requests it.
 	 *
+	 * @param int $user_id
+	 * @uses wp_verify_nonce, delete_user_meta
+	 * @action edit_user_profile_update
+	 * @return null
 	 */
 	public function action_edit_user_profile_update( $user_id ) {
-		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && check_admin_referer( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" ) ) {
+		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && wp_verify_nonce( $_POST["_{$this->users_key}_wpnonce"], $this->users_key . '_disable' ) ) {
 			if ( isset( $_POST[ $this->users_key ] ) )
 				delete_user_meta( $user_id, $this->users_key );
 		}
