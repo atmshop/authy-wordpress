@@ -498,7 +498,7 @@ class Authy_WP {
 
 		<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 			<tr>
-				<th><label for="phone">Mobile number</label></th>
+				<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 				<td>
 					<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
 
@@ -507,7 +507,7 @@ class Authy_WP {
 			</tr>
 
 			<tr>
-				<th><label for="phone">Country code</label></th>
+				<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
 				<td>
 					<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 				</td>
@@ -655,14 +655,14 @@ class Authy_WP {
 
 									<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
 										<tr>
-											<th><label for="phone">Mobile number</label></th>
+											<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 											<td>
 												<input type="tel" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
 											</td>
 										</tr>
 
 										<tr>
-											<th><label for="phone">Country code</label></th>
+											<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
 											<td>
 												<input type="text" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
 											</td>
@@ -750,13 +750,14 @@ class Authy_WP {
 	/**
 	 * Add Authy input field to login page
 	 *
+	 * @uses _e
 	 * @action login_form
 	 * @return string
 	 */
 	public function action_login_form() {
 		?>
 		<p>
-			<label for="authy_token">Authy Token<br>
+			<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
 			<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
 		</p>
 		<?php
