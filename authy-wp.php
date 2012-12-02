@@ -491,27 +491,39 @@ class Authy_WP {
 	/**
 	 *
 	 */
-	public function action_show_user_profile() {
-		$meta = $this->get_authy_data( get_current_user_id() );
+	public function action_show_user_profile( $user ) {
+		$meta = $this->get_authy_data( $user->ID );
 	?>
 		<h3>Authy for WordPress</h3>
 
 		<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
-			<tr>
-				<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
-				<td>
-					<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+			<?php if ( $this->user_has_authy_id( $user->ID ) ) : ?>
+				<tr>
+					<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable your Authy connection?', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="checkbox" id="<?php echo esc_attr( $this->users_key ); ?>_disable" name="<?php echo esc_attr( $this->users_key ); ?>[disable_own]" value="1" />
+						<label for="<?php echo esc_attr( $this->users_key ); ?>"><?php _e( 'Yes, disable Authy for your account.', 'authy_for_wp' ); ?></label>
 
-					<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
-				</td>
-			</tr>
+						<?php wp_nonce_field( $this->users_key . 'disable_own', $this->users_key . '[nonce]' ); ?>
+					</td>
+				</tr>
+			<?php else : ?>
+				<tr>
+					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
 
-			<tr>
-				<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
-				<td>
-					<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
-				</td>
-			</tr>
+						<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
+					</td>
+				</tr>
+
+				<tr>
+					<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+					</td>
+				</tr>
+			<?php endif; ?>
 		</table>
 
 	<?php
@@ -527,20 +539,26 @@ class Authy_WP {
 		$authy_data = isset( $_POST[ $this->users_key ] ) ? $_POST[ $this->users_key ] : false;
 
 		// Parse for nonce and API existence
-		if ( is_array( $authy_data ) && array_key_exists( 'nonce', $authy_data ) && wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
-			// Email address
-			$userdata = get_userdata( $user_id );
-			if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
-				$email = $userdata->data->user_email;
-			else
-				$email = null;
+		if ( is_array( $authy_data ) && array_key_exists( 'nonce', $authy_data ) ) {
+			if ( wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
+				// Email address
+				$userdata = get_userdata( $user_id );
+				if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
+					$email = $userdata->data->user_email;
+				else
+					$email = null;
 
-			// Phone number
-			$phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
-			$country_code = preg_replace( '#[^\d\+]#', '', $authy_data['country_code'] );
+				// Phone number
+				$phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
+				$country_code = preg_replace( '#[^\d\+]#', '', $authy_data['country_code'] );
 
-			// Process information with Authy
-			$this->set_authy_data( $user_id, $email, $phone, $country_code );
+				// Process information with Authy
+				$this->set_authy_data( $user_id, $email, $phone, $country_code );
+			} elseif ( wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'disable_own' ) ) {
+				// Delete Authy usermeta if requested
+				if ( isset( $authy_data['disable_own'] ) )
+					delete_user_meta( $user_id, $this->users_key );
+			}
 		}
 	}
 
@@ -568,7 +586,7 @@ class Authy_WP {
 					<th><label for="<?php echo $name; ?>"><?php _e( "Disable user's Authy connection?", 'authy_for_wp' ); ?></label></th>
 					<td>
 						<input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" />
-						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection', 'authy_for_wp' ); ?></label>
+						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection.', 'authy_for_wp' ); ?></label>
 					</td>
 				</tr>
 				<?php else : ?>
