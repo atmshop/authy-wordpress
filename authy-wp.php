@@ -7,6 +7,7 @@
  * Version: 0.1
  * Author URI: http://www.ethitter.com/
  * License: GPL2+
+ * Text Domain: authy_for_wp
 
 This program is free software; you can redistribute it and/or modify
 it under the terms of the GNU General Public License as published by
@@ -32,6 +33,9 @@ class Authy_WP {
 
 	// Parsed settings
 	private $settings = null;
+
+	// Is API ready, should plugin act?
+	protected $ready = false;
 
 	// Authy API
 	protected $api = null;
@@ -98,15 +102,18 @@ class Authy_WP {
 		add_action( 'admin_init', array( $this, 'action_admin_init' ) );
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
 
-		// User settings
-		add_action( 'show_user_profile', array( $this, 'action_show_user_profile' ) );
-		add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
-		add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
-		add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
+		// Anything other than plugin configuration belongs in here.
+		if ( $this->ready ) {
+			// User settings
+			add_action( 'show_user_profile', array( $this, 'action_show_user_profile' ) );
+			add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
+			add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
+			add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
 
-		// Authentication
-		add_action( 'login_form', array( $this, 'action_login_form' ), 50 );
-		add_filter( 'authenticate', array( $this, 'action_authenticate' ), 9999, 2 );
+			// Authentication
+			add_action( 'login_form', array( $this, 'action_login_form' ), 50 );
+			add_filter( 'authenticate', array( $this, 'action_authenticate' ), 9999, 2 );
+		}
 	}
 
 	/**
@@ -155,6 +162,8 @@ class Authy_WP {
 		if ( $api_key && isset( $endpoints[ $environment ] ) ) {
 			$this->api_key = $api_key;
 			$this->api_endpoint = $endpoints[ $environment ];
+
+			$this->ready = true;
 		}
 
 		// Instantiate the API class
@@ -264,6 +273,10 @@ class Authy_WP {
 		<div class="wrap">
 			<?php screen_icon(); ?>
 			<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
+
+			<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
+
+			<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy_for_wp' ); ?></p>
 
 			<form action="options.php" method="post">
 
