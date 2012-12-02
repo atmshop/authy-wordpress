@@ -101,12 +101,15 @@ class Authy_WP {
 		// Plugin settings
 		add_action( 'admin_init', array( $this, 'action_admin_init' ) );
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
+		add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
 
 		// Anything other than plugin configuration belongs in here.
 		if ( $this->ready ) {
 			// User settings
 			add_action( 'show_user_profile', array( $this, 'action_show_user_profile' ) );
 			add_action( 'edit_user_profile', array( $this, 'action_edit_user_profile' ) );
+			add_action( 'wp_ajax_' . $this->users_page, array( $this, 'ajax_get_id' ) );
+
 			add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
 			add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
 
@@ -198,6 +201,23 @@ class Authy_WP {
 	}
 
 	/**
+	 *
+	 */
+	public function action_admin_enqueue_scripts() {
+		if ( ! $this->ready )
+			return;
+
+		$current_screen = get_current_screen();
+
+		if ( 'profile' == $current_screen->base ) {
+			wp_enqueue_script( 'authy-wp-profile', plugins_url( 'assets/authy-wp-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.0, true );
+			wp_localize_script( 'authy-wp-profile', 'AuthyForWP', array( 'ajax' => $this->get_ajax_url() ) );
+
+			wp_enqueue_style( 'thickbox' );
+		}
+	}
+
+	/**
 	 * Retrieve a plugin setting
 	 *
 	 * @param string $key
@@ -220,6 +240,16 @@ class Authy_WP {
 			$value = $this->settings[ $key ];
 
 		return $value;
+	}
+
+	/**
+	 *
+	 */
+	protected function get_ajax_url() {
+		return add_query_arg( array(
+			'action' => $this->users_page,
+			'nonce' => wp_create_nonce( $this->users_key . '_ajax' )
+		), admin_url( 'admin-ajax.php' ) );
 	}
 
 	/**
@@ -460,26 +490,27 @@ class Authy_WP {
 	public function action_show_user_profile() {
 		$meta = $this->get_authy_data( get_current_user_id() );
 	?>
-		<h3>Authy Two-factor Authentication</h3>
+		<h3>Authy for WordPress</h3>
 
-		<table class="form-table">
+		<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 			<tr>
 				<th><label for="phone">Mobile number</label></th>
 				<td>
-					<input type="tel" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+					<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+
+					<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
 				</td>
 			</tr>
 
 			<tr>
 				<th><label for="phone">Country code</label></th>
 				<td>
-					<input type="text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+					<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 				</td>
 			</tr>
 		</table>
 
 	<?php
-		wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' );
 	}
 
 	/**
@@ -547,6 +578,150 @@ class Authy_WP {
 
 			wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
 		}
+	}
+
+	/**
+	 *
+	 */
+	public function ajax_get_id() {
+		// If nonce isn't set, bail
+		if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
+			?><script type="text/javascript">self.parent.tb_remove();</script><?php
+			exit;
+		}
+
+		// User data
+		$user_id = get_current_user_id();
+		$user_data = get_userdata( $user_id );
+		$authy_data = $this->get_authy_data( $user_id );
+
+		// Step
+		$step = isset( $_REQUEST['authy_step'] ) ? $_REQUEST['authy_step'] : false;
+
+		// iframe head
+		?><head>
+			<?php
+				wp_print_scripts( array( 'jquery' ) );
+				wp_print_styles( array( 'colors' ) );
+			?>
+
+			<style type="text/css">
+				body {
+					width: 450px;
+					height: 250px;
+					overflow: hidden;
+					padding: 0 10px 10px 10px;
+				}
+
+				div.wrap {
+					width: 450px;
+					height: 250px;
+					overflow: hidden;
+				}
+
+				table th label {
+					font-size: 12px;
+				}
+			</style>
+		</head><?php
+
+		// iframe body
+		?><body <?php body_class( 'wp-admin wp-core-ui' ); ?>>
+			<div class="wrap">
+				<h2>Authy for WP</h2>
+
+				<form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
+
+					<?php
+						switch( $step ) {
+							default :
+								if ( $this->user_has_authy_id( $user_id ) ) : ?>
+									<p><?php _e( 'You already have any Authy ID associated with your account.', 'authy_for_wp' ); ?></p>
+
+									<p><?php printf( __( 'You can disable Authy for your <strong>%s</strong> user by clicking the button below', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+
+									<?php submit_button( __( 'Disable Authy', 'authy_for_wp' ) ); ?>
+
+									<input type="hidden" name="authy_step" value="disable" />
+									<?php wp_nonce_field( $this->users_key . '_ajax_disable' ); ?>
+								<?php else : ?>
+									<p><?php printf( __( 'Authy is not yet configured for your the <strong>%s</strong> account.', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+
+									<p><?php _e( 'To enable Authy for this account, complete the form below, then click <em>Continue</em>.', 'authy_for_wp' ); ?></p>
+
+									<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
+										<tr>
+											<th><label for="phone">Mobile number</label></th>
+											<td>
+												<input type="tel" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
+											</td>
+										</tr>
+
+										<tr>
+											<th><label for="phone">Country code</label></th>
+											<td>
+												<input type="text" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+											</td>
+										</tr>
+									</table>
+
+									<input type="hidden" name="authy_step" value="check" />
+									<?php wp_nonce_field( $this->users_key . '_ajax_check' ); ?>
+
+									<?php submit_button( __( 'Continue', 'authy_for_wp' ) ); ?>
+
+								<?php endif;
+
+								break;
+
+							case 'disable' :
+								if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' ) )
+									delete_user_meta( $user_id, $this->users_key );
+
+								wp_safe_redirect( $this->get_ajax_url() );
+								exit;
+
+								break;
+
+							case 'check' :
+								if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_check' ) ) {
+									$email = sanitize_email( $user_data->user_email );
+									$phone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
+									$country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
+
+									if ( $email && $phone && $country_code ) {
+										$this->set_authy_data( $user_id, $email, $phone, $country_code );
+
+										if ( $this->user_has_authy_id( $user_id ) ) : ?>
+											<p><?php printf( __( 'Congratulations, Authy is now configured for your <strong>%s</strong> user account.', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+
+											<p><?php _e( 'Until disabled, you will be asked for an Authy token each time you log in.', 'authy_for_wp' ); ?></p>
+
+											<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy_for_wp' ); ?></a></p>
+										<?php else : ?>
+											<p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+
+											<p><?php _e( 'Please try again later.', 'authy_for_wp' ); ?></p>
+
+											<p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy_for_wp' ); ?></a></p>
+										<?php endif;
+
+										exit;
+									}
+								}
+
+								wp_safe_redirect( $this->get_ajax_url() );
+								exit;
+
+								break;
+
+						}
+					?>
+				</form>
+			</div>
+		</body><?php
+
+		exit;
 	}
 
 	/**
