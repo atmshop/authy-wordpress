@@ -193,7 +193,7 @@ class Authy_WP {
 	 * @return null
 	 */
 	public function action_admin_menu() {
-		add_options_page( 'Authy for WP', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
+		add_options_page( 'Authy for WordPress', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
 		add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
 	}
 
