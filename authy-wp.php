@@ -269,14 +269,19 @@ class Authy_WP {
 	 * @return string
 	 */
 	public function plugin_settings_page() {
+		$plugin_name = esc_html( get_admin_page_title() );
 		?>
 		<div class="wrap">
 			<?php screen_icon(); ?>
-			<h2><?php echo esc_html( get_admin_page_title() ); ?></h2>
+			<h2><?php echo $plugin_name; ?></h2>
 
-			<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
-
-			<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy_for_wp' ); ?></p>
+			<?php if ( $this->ready ) : ?>
+				<p><?php _e( "With API keys entered, your users can now enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
+			<?php else : ?>
+				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
+				<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy_for_wp' ); ?></p>
+				<p><?php printf( __( "Until your API keys are entered, the %s plugin cannot function.", 'authy_for_wp' ), $plugin_name ); ?></p>
+			<?php endif; ?>
 
 			<form action="options.php" method="post">
 
