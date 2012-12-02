@@ -109,6 +109,8 @@ class Authy_WP {
 		add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
 		add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
 
+		add_filter( 'plugin_action_links', array( $this, 'filter_plugin_action_links' ), 10, 2 );
+
 		// Anything other than plugin configuration belongs in here.
 		if ( $this->ready ) {
 			// User settings
@@ -229,6 +231,22 @@ class Authy_WP {
 
 			wp_enqueue_style( 'thickbox' );
 		}
+	}
+
+	/**
+	 * Add settings link to plugin row actions
+	 *
+	 * @param array $links
+	 * @param string $plugin_file
+	 * @uses menu_page_url, __
+	 * @filter plugin_action_links
+	 * @return array
+	 */
+	public function filter_plugin_action_links( $links, $plugin_file ) {
+		if ( false !== strpos( $plugin_file, pathinfo( __FILE__, PATHINFO_FILENAME ) ) )
+			$links['settings'] = '<a href="' . menu_page_url( $this->settings_page, false ) . '">' . __( 'Settings', 'authy_for_wp' ) . '</a>';
+
+		return $links;
 	}
 
 	/**
