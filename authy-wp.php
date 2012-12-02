@@ -31,6 +31,9 @@ class Authy_WP {
 	// Oh look, a singleton
 	private static $__instance = null;
 
+	// Some plugin info
+	protected $name = 'Authy for WordPress';
+
 	// Parsed settings
 	private $settings = null;
 
@@ -90,7 +93,10 @@ class Authy_WP {
 	private function __construct() {}
 
 	/**
+	 * Plugin setup
 	 *
+	 * @uses this::register_settings_fields, this::prepare_api, add_action, add_filter
+	 * @return null
 	 */
 	private function setup() {
 		require( 'authy-wp-api.php' );
@@ -196,12 +202,16 @@ class Authy_WP {
 	 * @return null
 	 */
 	public function action_admin_menu() {
-		add_options_page( 'Authy for WordPress', 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
+		add_options_page( $this->name, 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
 		add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
 	}
 
 	/**
+	 * Enqueue admin script for connection modal
 	 *
+	 * @uses get_current_screen, wp_enqueue_script, plugins_url, wp_localize_script, this::get_ajax_url, wp_enqueue_style
+	 * @action admin_enqueue_scripts
+	 * @return null
 	 */
 	public function action_admin_enqueue_scripts() {
 		if ( ! $this->ready )
@@ -504,12 +514,15 @@ class Authy_WP {
 	 */
 
 	/**
+	 * Non-JS connection interface
 	 *
+	 * @param object $user
+	 * @uses this::get_authy_data, esc_attr,
 	 */
 	public function action_show_user_profile( $user ) {
 		$meta = $this->get_authy_data( $user->ID );
 	?>
-		<h3>Authy for WordPress</h3>
+		<h3><?php echo esc_html( $this->name ); ?></h3>
 
 		<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 			<?php if ( $this->user_has_authy_id( $user->ID ) ) : ?>
@@ -517,7 +530,7 @@ class Authy_WP {
 					<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable your Authy connection?', 'authy_for_wp' ); ?></label></th>
 					<td>
 						<input type="checkbox" id="<?php echo esc_attr( $this->users_key ); ?>_disable" name="<?php echo esc_attr( $this->users_key ); ?>[disable_own]" value="1" />
-						<label for="<?php echo esc_attr( $this->users_key ); ?>"><?php _e( 'Yes, disable Authy for your account.', 'authy_for_wp' ); ?></label>
+						<label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Yes, disable Authy for your account.', 'authy_for_wp' ); ?></label>
 
 						<?php wp_nonce_field( $this->users_key . 'disable_own', $this->users_key . '[nonce]' ); ?>
 					</td>
