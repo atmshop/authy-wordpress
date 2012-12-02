@@ -210,8 +210,12 @@ class Authy_WP {
 		$current_screen = get_current_screen();
 
 		if ( 'profile' == $current_screen->base ) {
-			wp_enqueue_script( 'authy-wp-profile', plugins_url( 'assets/authy-wp-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.0, true );
-			wp_localize_script( 'authy-wp-profile', 'AuthyForWP', array( 'ajax' => $this->get_ajax_url() ) );
+			wp_enqueue_script( 'authy-wp-profile', plugins_url( 'assets/authy-wp-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.01, true );
+			wp_localize_script( 'authy-wp-profile', 'AuthyForWP', array(
+				'ajax' => $this->get_ajax_url(),
+				'th_text' => __( 'Connection', 'authy_for_wp' ),
+				'button_text' => __( 'Manage Authy Connection', 'authy_for_wp' )
+			) );
 
 			wp_enqueue_style( 'thickbox' );
 		}
@@ -561,16 +565,16 @@ class Authy_WP {
 					$name = esc_attr( $this->users_key );
 				?>
 				<tr>
-					<th><label for="<?php echo $name; ?>">Disable user's Authy connection?</label></th>
+					<th><label for="<?php echo $name; ?>"><?php _e( "Disable user's Authy connection?", 'authy_for_wp' ); ?></label></th>
 					<td>
 						<input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" />
-						<label for="<?php echo $name; ?>">Yes, force user to reset the Authy connection</label>
+						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection', 'authy_for_wp' ); ?></label>
 					</td>
 				</tr>
 				<?php else : ?>
 				<tr>
-					<th>This user has not enabled Authy.</th>
-					<td></td>
+					<th><?php _e( 'Connection', 'authy_for_wp' ); ?></th>
+					<td><?php _e( 'This user has not enabled Authy.', 'authy_for_wp' ); ?></td>
 				</tr>
 				<?php endif; ?>
 			</table>
