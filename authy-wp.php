@@ -247,7 +247,10 @@ class Authy_WP {
 	}
 
 	/**
+	 * Build Ajax URL for users' connection management
 	 *
+	 * @uses add_query_arg, wp_create_nonce, admin_url
+	 * @return string
 	 */
 	protected function get_ajax_url() {
 		return add_query_arg( array(
@@ -384,7 +387,7 @@ class Authy_WP {
 	 * @param string $email
 	 * @param string $phone
 	 * @param string $country_code
-	 * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, delete_user_meta, get_user_meta, update_user_meta
+	 * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, this::clear_authy_data, get_user_meta, update_user_meta
 	 * @return null
 	 */
 	public function set_authy_data( $user_id, $email, $phone, $country_code ) {
@@ -413,7 +416,7 @@ class Authy_WP {
 
 		// Update Authy data if sufficient information is provided, otherwise clear the option out.
 		if ( empty( $data_sanitized['phone'] ) ) {
-			delete_user_meta( $user_id, $this->users_key );
+			$this->clear_authy_data( $user_id );
 		} else {
 			$data = get_user_meta( $user_id, $this->users_key, true );
 			if ( ! is_array( $data ) )
@@ -454,6 +457,18 @@ class Authy_WP {
 			return wp_parse_args( $data[ $api_key ], $this->user_defaults );
 
 		return $this->user_defaults;
+	}
+
+	/**
+	 * Delete any stored Authy connections for the given user.
+	 * Expected usage is somewhere where clearing is the known action.
+	 *
+	 * @param int $user_id
+	 * @uses delete_user_meta
+	 * @return null
+	 */
+	protected function clear_authy_data( $user_id ) {
+		delete_user_meta( $user_id, $this->users_key );
 	}
 
 	/**
@@ -530,7 +545,11 @@ class Authy_WP {
 	}
 
 	/**
+	 * Handle non-JS changes to users' own connection
 	 *
+	 * @param int $user_id
+	 * @uses check_admin_referer, wp_verify_nonce, get_userdata, is_wp_error, this::set_authy_data, this::clear_authy_data,
+	 * @return null
 	 */
 	public function action_personal_options_update( $user_id ) {
 		check_admin_referer( 'update-user_' . $user_id );
@@ -557,7 +576,7 @@ class Authy_WP {
 			} elseif ( wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'disable_own' ) ) {
 				// Delete Authy usermeta if requested
 				if ( isset( $authy_data['disable_own'] ) )
-					delete_user_meta( $user_id, $this->users_key );
+					$this->clear_authy_data( $user_id );
 			}
 		}
 	}
@@ -603,7 +622,11 @@ class Authy_WP {
 	}
 
 	/**
+	 * Ajax handler for users' connection manager
 	 *
+	 * @uses wp_verify_nonce, get_current_user_id, get_userdata, this::get_authy_data, wp_print_scripts, wp_print_styles, body_class, esc_url, this::get_ajax_url, this::user_has_authy_id, _e, __, submit_button, wp_nonce_field, esc_attr, this::clear_authy_data, wp_safe_redirect, sanitize_email, this::set_authy_data
+	 * @action wp_ajax_{$this->users_page}
+	 * @return string
 	 */
 	public function ajax_get_id() {
 		// If nonce isn't set, bail
@@ -618,7 +641,7 @@ class Authy_WP {
 		$authy_data = $this->get_authy_data( $user_id );
 
 		// Step
-		$step = isset( $_REQUEST['authy_step'] ) ? $_REQUEST['authy_step'] : false;
+		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
 
 		// iframe head
 		?><head>
@@ -698,7 +721,7 @@ class Authy_WP {
 
 							case 'disable' :
 								if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' ) )
-									delete_user_meta( $user_id, $this->users_key );
+									$this->clear_authy_data( $user_id );
 
 								wp_safe_redirect( $this->get_ajax_url() );
 								exit;
@@ -750,14 +773,14 @@ class Authy_WP {
 	 * Clear a user's Authy configuration if an allowed user requests it.
 	 *
 	 * @param int $user_id
-	 * @uses wp_verify_nonce, delete_user_meta
+	 * @uses wp_verify_nonce, this::clear_authy_data
 	 * @action edit_user_profile_update
 	 * @return null
 	 */
 	public function action_edit_user_profile_update( $user_id ) {
 		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && wp_verify_nonce( $_POST["_{$this->users_key}_wpnonce"], $this->users_key . '_disable' ) ) {
 			if ( isset( $_POST[ $this->users_key ] ) )
-				delete_user_meta( $user_id, $this->users_key );
+				$this->clear_authy_data( $user_id );
 		}
 	}
 
