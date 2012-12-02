@@ -7,10 +7,10 @@ Stable tag: 0.1
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Add Authy two-factor authentication to WordPress
+Add Authy two-factor authentication to WordPress. Users opt in for an added level of security that relies on random codes from their mobile devices.
 
 == Description ==
-Enable the plugin, enter your Authy API keys, and your users can enable Authy on their accounts.
+Enable the plugin, enter your [Authy](http://www.authy.com/) API keys, and your users can enable Authy on their accounts.
 
 Once users configure Authy through their WordPress user profiles, any login attempts will require an Authy token in addition to the account username and password.
 
