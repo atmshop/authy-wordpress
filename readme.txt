@@ -14,6 +14,8 @@ Enable the plugin, enter your [Authy](http://www.authy.com/) API keys, and your 
 
 Once users configure Authy through their WordPress user profiles, any login attempts will require an Authy token in addition to the account username and password.
 
+Plugin development is found at https://github.com/ethitter/Authy-for-WP.
+
 == Installation ==
 
 1. Install the plugin either via your site's dashboard, or by downloading the plugin from WordPress.org and uploading the files to your server.
