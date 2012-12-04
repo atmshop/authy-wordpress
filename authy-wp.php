@@ -181,6 +181,7 @@ class Authy_WP {
 	 */
 	public function action_admin_init() {
 		register_setting( $this->settings_page, $this->settings_key, array( $this, 'validate_plugin_settings' ) );
+		register_setting( $this->settings_page, 'authy_roles', array($this, 'roles_validate'));
 	}
 
 	/**
@@ -250,7 +251,6 @@ class Authy_WP {
 			$this->settings = get_option( $this->settings_key );
 			$this->settings = wp_parse_args( $this->settings, array(
 				'api_key_production'  => '',
-				'api_key_development' => '',
 				'environment'         => apply_filters( 'authy_wp_environment', 'production' )
 			) );
 		}
@@ -290,6 +290,7 @@ class Authy_WP {
 
 			add_settings_field( $args['name'], $args['label'], array( $this, 'form_field_' . $args['type'] ), $this->settings_page, $args['section'], $args );
 		}
+		add_settings_field('authy_roles', __('Enable for roles:', 'authy_for_wp'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
 	}
 
 	/**
@@ -312,6 +313,30 @@ class Authy_WP {
 		$value = $this->get_setting( $args['name'] );
 
 		?><input type="text" name="<?php echo esc_attr( $this->settings_key ); ?>[<?php echo $name; ?>]" class="<?php echo esc_attr( $args['class'] ); ?>" id="field-<?php echo $name; ?>" value="<?php echo esc_attr( $value ); ?>" /><?php
+	}
+
+	/**
+	* Render settings roles
+	* @uses $wp_roles
+	* @return string
+	*/
+
+	public function add_settings_roles() {
+		global $wp_roles;
+
+        $roles = $wp_roles->get_names();
+        $listRoles = array();
+        foreach($roles as $key=>$role) {
+            $listRoles[before_last_bar($key)] = before_last_bar($role);
+        }
+
+        $selected = get_option('authy_roles', $listRoles);
+
+        foreach ($wp_roles->get_names() as $role) {
+        	?>
+        	<input name='authy_roles[<?php echo strtolower(before_last_bar($role)); ?>]' type='checkbox' value='<?php echo before_last_bar($role); ?>'  <?php if(in_array(before_last_bar($role), $selected)) echo 'checked="checked"'; ?> /> <?php echo before_last_bar($role); ?></br>
+        	<?php
+        }
 	}
 
 	/**
@@ -391,6 +416,29 @@ class Authy_WP {
 		return $settings_validated;
 	}
 
+	/**
+	* Validate roles
+	* @param array $roles
+	* @uses $wp_roles
+	* @return array
+	*/
+
+    public function roles_validate ($roles){
+
+    	if(!is_array($roles) || empty($roles)){
+    		return array();
+    	}
+
+        global $wp_roles;
+        $listRoles = $wp_roles->get_names();
+
+        foreach ($roles as $key) {
+        	if(!in_array($key, $listRoles)) {
+        		unset($roles[$key]);
+        	}
+        }
+        return $roles;
+    }
 	/**
 	 * USER INFORMATION FUNCTIONS
 	 */

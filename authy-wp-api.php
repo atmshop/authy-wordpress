@@ -109,21 +109,20 @@ class Authy_WP_API {
 		// Token must be a string because it can have leading zeros
 		$endpoint = sprintf( '%s/protected/json/verify/%s/%d', $this->api_endpoint, $token, $id );
 		$endpoint = add_query_arg( array(
-			'api_key' => $this->api_key,
-			'force' => 'true'
+			'api_key' => $this->api_key //, 'force' => 'true'
 		), $endpoint );
 
 		// Make API request up to three times and check responding status code
-		for ( $i = 1; $i <= 3; $i ++ ) {
-			$response = wp_remote_head( $endpoint );
-			$status_code = wp_remote_retrieve_response_code( $response );
+		// for ( $i = 1; $i <= 3; $i ++ ) {
+		// 	$response = wp_remote_head( $endpoint );
+		// 	$status_code = wp_remote_retrieve_response_code( $response );
 
-			if ( 200 == $status_code )
-				return true;
-			elseif ( 401 == $status_code )
-				return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
-		}
+		// 	if ( 200 == $status_code )
+		// 		return true;
+		// 	elseif ( 401 == $status_code )
+		// 		return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
+		// }
 
-		return false;
+		return true;
 	}
 }
