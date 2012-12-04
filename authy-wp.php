@@ -122,8 +122,7 @@ class Authy_WP {
 			add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
 
 			// Authentication
-			add_action( 'login_form', array( $this, 'action_login_form' ), 50 );
-			add_filter( 'authenticate', array( $this, 'action_authenticate' ), 9999, 2 );
+			add_filter( 'authenticate', array( $this, 'authenticate_user'), 10, 3);
 		}
 	}
 
@@ -135,7 +134,7 @@ class Authy_WP {
 	 */
 	protected function register_settings_fields() {
 		$this->settings_fields = array(
-			 array(
+			array(
 				'name'      => 'api_key_production',
 				'label'     => __( 'Production API Key', 'authy_wp' ),
 				'type'      => 'text',
@@ -808,58 +807,105 @@ class Authy_WP {
 	 */
 
 	/**
-	 * Add Authy input field to login page
+	 * Add Two factor authentication page
 	 *
+	 * @param mixed $user
+	 * @param string $redirect
 	 * @uses _e
-	 * @action login_form
 	 * @return string
 	 */
-	public function action_login_form() {
+	public function authy_token_form($user, $redirect) {
+		$username = $user->user_login;
 		?>
-		<p>
-			<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
-			<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
-		</p>
+		<html>
+          <head>
+          	<?php
+                global $wp_version;
+                if(version_compare($wp_version, "3.3", "<=")){
+            ?>
+                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
+            <?php
+                }
+                else{
+            ?>
+                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
+                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
+            <?php
+                }
+            ?>
+          </head>
+          <body class='login'>
+            <div id="login">
+                <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
+          		<h3 style="text-align: center;">Two Factor Authentication</h3>
+	          	<form method="POST" id="authy_for_wp" action="wp-login.php">
+					<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
+					<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
+					<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
+					<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
+					<input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit">
+			    </form>
+			</div>
+          </body>
 		<?php
 	}
 
 	/**
-	 * Attempt Authy verification if conditions are met.
-	 *
-	 * @param mixed $user
-	 * @param string $username
-	 * @uses XMLRPC_REQUEST, APP_REQUEST, this::user_has_authy_id, this::get_user_authy_id, this::api::check_token
-	 * @return mixed
-	 */
-	public function action_authenticate( $user, $username ) {
-		// If we don't have a username yet, or the method isn't supported, stop.
-		if ( empty( $username ) || ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
+	* @param mixed $user
+	* @param string $username
+	* @param string $password
+	* @uses XMLRPC_REQUEST, APP_REQUEST, this::user_has_authy_id, this::get_user_authy_id, this::api::check_token
+	* @return mixed
+	*/
+
+	public function authenticate_user($user="", $username="", $password="") {
+		// If the method isn't supported, stop.
+		if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
 			return $user;
 
-		// Don't bother if WP can't provide a user object.
-		if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
-			return $user;
+		if (isset( $_POST['authy_token'] )) {
+			remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
-		// User must opt in.
-		if ( ! $this->user_has_authy_id( $user->ID ) )
-			return $user;
+	        // Check the specified token
+	        $user = get_user_by('login', $_POST['username']);
+			$authy_id = $this->get_user_authy_id( $user->ID );
+			$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
+			$api_check = $this->api->check_token( $authy_id, $authy_token );
 
-		// If a user has opted in, he/she must provide a token
-		if ( ! isset( $_POST['authy_token'] ) || empty( $_POST['authy_token'] ) )
-			return new WP_Error( 'authentication_failed', sprintf( __('<strong>ERROR</strong>: To log in as <strong>%s</strong>, you must provide an Authy token.'), $username ) );
+			// Act on API response
+			if ( $api_check === false )
+				return null;
+			elseif ( is_string( $api_check ) )
+				return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
 
-		// Check the specified token
-		$authy_id = $this->get_user_authy_id( $user->ID );
-		$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
-		$api_check = $this->api->check_token( $authy_id, $authy_token );
+            wp_set_auth_cookie($user->ID);
+			wp_safe_redirect($_POST['redirect_to']);
+            exit();
+        }
 
-		// Act on API response
-		if ( false === $api_check )
-			return null;
-		elseif ( is_string( $api_check ) )
-			return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
 
-		return $user;
+        // If have a username
+        if (! empty( $username )) {
+        	$user = get_user_by('login', $username);
+
+	        // Don't bother if WP can't provide a user object.
+			if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
+				return $user;
+
+	        // User must opt in.
+	        if ( ! $this->user_has_authy_id( $user->ID ) )
+				return $user;
+
+	        remove_action('authenticate', 'wp_authenticate_username_password', 20);
+
+	        if (wp_check_password($password, $user->user_pass, $user->ID)) {
+	        	$this->authy_token_form($user, $_POST['redirect_to']);
+	        	exit();
+			}else{
+				$user = new WP_Error('authentication_failed', __('<strong>ERROR</strong>: Invalid username or incorrect password.'));
+				return $user;
+			}
+		}
 	}
 }
 
