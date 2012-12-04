@@ -140,12 +140,6 @@ class Authy_WP {
 				'label'     => __( 'Production API Key', 'authy_wp' ),
 				'type'      => 'text',
 				'sanitizer' => 'alphanumeric'
-			),
-			array(
-				'name'      => 'api_key_development',
-				'label'     => __( 'Development API Key', 'authy_wp' ),
-				'type'      => 'text',
-				'sanitizer' => 'alphanumeric'
 			)
 		);
 	}
@@ -158,21 +152,15 @@ class Authy_WP {
 	 */
 	protected function prepare_api() {
 		$endpoints = array(
-			'production'  => 'https://api.authy.com',
-			'development' => 'http://sandbox-api.authy.com'
+			'production'  => 'https://api.authy.com'
 		);
 
-		// Plugin page accepts keys for production and development.
-		// Cannot be toggled except via the `authy_wp_environment` filter.
-		$environment = $this->get_setting( 'environment' );
-
-		// API key is specific to the environment
-		$api_key = $this->get_setting( 'api_key_' . $environment );
+		$api_key = $this->get_setting( 'api_key_production');
 
 		// Only prepare the API endpoint if we have all information needed.
-		if ( $api_key && isset( $endpoints[ $environment ] ) ) {
+		if ( $api_key && isset( $endpoints['production'] ) ) {
 			$this->api_key = $api_key;
-			$this->api_endpoint = $endpoints[ $environment ];
+			$this->api_endpoint = $endpoints[ 'production' ];
 
 			$this->ready = true;
 		}
