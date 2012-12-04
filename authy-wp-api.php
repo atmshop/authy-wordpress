@@ -113,17 +113,38 @@ class Authy_WP_API {
 			'force' => 'true'
 		), $endpoint );
 
-		Make API request up to three times and check responding status code
+		// Make API request up to three times and check responding status code
 		for ( $i = 1; $i <= 3; $i ++ ) {
 			$response = wp_remote_head( $endpoint );
 			$status_code = wp_remote_retrieve_response_code( $response );
 
-			if ( 200 == $status_code )
+			if ( $status_code == 200 )
 				return true;
-			elseif ( 401 == $status_code )
+			elseif ( $status_code == 401)
 				return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
 		}
 
 		return false;
+	}
+
+	/**
+	* Request a valid token via SMS
+	* @param string $id
+	* @return mixed
+	*/
+
+	public function request_sms($id) {
+		$endpoint = sprintf( '%s/protected/json/sms/%d', $this->api_endpoint, $id );
+		$endpoint = add_query_arg( array('api_key' => $this->api_key, 'force' => 'true'), $endpoint);
+
+		for ( $i = 1; $i <= 3; $i ++ ) {
+			$response = wp_remote_head($endpoint);
+			$status_code = wp_remote_retrieve_response_code($response);
+
+			if ( $status_code == 200)
+				return true;
+
+			return false;
+		}
 	}
 }
