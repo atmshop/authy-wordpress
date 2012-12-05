@@ -237,6 +237,8 @@ class Authy_WP {
 		return $links;
 	}
 
+
+
 	/**
 	 * Retrieve a plugin setting
 	 *
@@ -273,6 +275,29 @@ class Authy_WP {
 			'nonce' => wp_create_nonce( $this->users_key . '_ajax' )
 		), admin_url( 'admin-ajax.php' ) );
 	}
+
+	/**
+	* Check if Two factor authentication is available for role
+	* @param object $user
+	* @uses wp_roles, get_option
+	* @return boolean
+	*
+	*/
+    public function available_authy_for_role($user) {
+      global $wp_roles;
+
+      $available_authy = false;
+
+      $authy_roles = get_option('authy_roles');
+
+      foreach ($user->roles as $role) {
+        if (array_key_exists($role, $authy_roles))
+            $available_authy = true;
+      }
+
+      return $available_authy;
+    }
+
 
 	/**
 	 * GENERAL OPTIONS PAGE
@@ -371,6 +396,7 @@ class Authy_WP {
 		</div>
 		<?php
 	}
+
 
 	/**
 	 * Validate plugin settings
@@ -575,10 +601,10 @@ class Authy_WP {
 	public function action_show_user_profile( $user ) {
 		$meta = $this->get_authy_data( $user->ID );
 	?>
-		<h3><?php echo esc_html( $this->name ); ?></h3>
+		<?php if ( $this->user_has_authy_id( $user->ID ) ) : ?>
+		    <h3><?php echo esc_html( $this->name ); ?></h3>
 
-		<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
-			<?php if ( $this->user_has_authy_id( $user->ID ) ) : ?>
+		    <table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 				<tr>
 					<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable your Authy connection?', 'authy_for_wp' ); ?></label></th>
 					<td>
@@ -588,7 +614,11 @@ class Authy_WP {
 						<?php wp_nonce_field( $this->users_key . 'disable_own', $this->users_key . '[nonce]' ); ?>
 					</td>
 				</tr>
-			<?php else : ?>
+			</table>
+		<?php elseif ($this->available_authy_for_role($user)) :?>
+		    <h3><?php echo esc_html( $this->name ); ?></h3>
+
+		    <table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 				<tr>
 					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 					<td>
@@ -604,9 +634,8 @@ class Authy_WP {
 						<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 					</td>
 				</tr>
-			<?php endif; ?>
-		</table>
-
+			</table>
+		<?php endif; ?>
 	<?php
 	}
 
@@ -664,7 +693,6 @@ class Authy_WP {
 				<?php if ( $this->user_has_authy_id( $user->ID ) ) :
 					$meta = get_user_meta( get_current_user_id(), $this->users_key, true );
 					$meta = wp_parse_args( $meta, $this->user_defaults );
-
 					$name = esc_attr( $this->users_key );
 				?>
 				<tr>
@@ -674,16 +702,30 @@ class Authy_WP {
 						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection.', 'authy_for_wp' ); ?></label>
 					</td>
 				</tr>
-				<?php else : ?>
+				<?php
+				wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
+
+				else :
+					$authy_data = $this->get_authy_data( $user->ID );
+				?>
 				<tr>
-					<th><?php _e( 'Connection', 'authy_for_wp' ); ?></th>
-					<td><?php _e( 'This user has not enabled Authy.', 'authy_for_wp' ); ?></td>
+					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
+					</td>
+					<?php wp_nonce_field( $this->users_key . '_edit', "_{$this->users_key}_wpnonce" ); ?>
 				</tr>
+
+				<tr>
+					<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+					</td>
+				</tr>
+
 				<?php endif; ?>
 			</table>
 		<?php
-
-			wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
 		}
 	}
 
@@ -847,6 +889,11 @@ class Authy_WP {
 		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && wp_verify_nonce( $_POST["_{$this->users_key}_wpnonce"], $this->users_key . '_disable' ) ) {
 			if ( isset( $_POST[ $this->users_key ] ) )
 				$this->clear_authy_data( $user_id );
+		}else{
+			$email = $_POST['email'];
+			$phone = $_POST['authy_for_wp_user']['phone'];
+			$country_code = $_POST['authy_for_wp_user']['country_code'];
+			$this->set_authy_data( $user_id, $email, $phone, $country_code );
 		}
 	}
 
@@ -893,6 +940,7 @@ class Authy_WP {
 					<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
 					<input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit">
 			    </form>
+			    <a href="wp-login.php?action=action_request_sms&u=<?php echo $username ?>"><?php _e('Request SMS Token', 'authy_for_wp');?></a>
 			</div>
           </body>
 		<?php
@@ -940,9 +988,9 @@ class Authy_WP {
 			if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
 				return $user;
 
-	        // User must opt in.
-	        if ( ! $this->user_has_authy_id( $user->ID ) )
-				return $user;
+            // User must opt in.
+            if ( ! $this->user_has_authy_id( $user->ID ))
+                return $user;
 
 	        remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
