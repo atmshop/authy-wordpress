@@ -208,7 +208,7 @@ class Authy_WP {
 		if ( ! $this->ready )
 			return;
 
-		$current_screen = get_current_screen();
+		global $current_screen;
 
 		if ( $current_screen->base == 'profile' ) {
 			wp_enqueue_script( 'authy-wp-profile', plugins_url( 'assets/authy-wp-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.01, true );
@@ -233,7 +233,7 @@ class Authy_WP {
 	 */
 	public function filter_plugin_action_links( $links, $plugin_file ) {
 		if ( strpos( $plugin_file, pathinfo( __FILE__, PATHINFO_FILENAME ) ) !== false )
-			$links['settings'] = '<a href="' . menu_page_url( $this->settings_page, false ) . '">' . __( 'Settings', 'authy_for_wp' ) . '</a>';
+			$links['settings'] = '<a href="options-general.php?page=' . $this->settings_page . '">' . __( 'Settings', 'authy_for_wp' ) . '</a>';
 
 		return $links;
 	}
@@ -308,34 +308,20 @@ class Authy_WP {
 	 * @return null
 	 */
 	public function register_settings_page_sections() {
-		foreach ( $this->settings_fields as $args ) {
-			$args = wp_parse_args( $args, $this->settings_field_defaults );
-
-			add_settings_field( $args['name'], $args['label'], array( $this, 'form_field_' . $args['type'] ), $this->settings_page, $args['section'], $args );
-		}
+		add_settings_field('api_key_production', __('Production API Key', 'authy_for_wp'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
 		add_settings_field('authy_roles', __('Enable for roles:', 'authy_for_wp'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
 	}
 
 	/**
-	 * Render text input
+	 * Render settings api key
 	 *
-	 * @param array $args
-	 * @uses wp_parse_args, esc_attr, this::get_setting, esc_attr
-	 * @return string or null
+	 * @uses this::get_setting, esc_attr
+	 * @return string
 	 */
-	public function form_field_text( $args ) {
-		$args = wp_parse_args( $args, $this->settings_field_defaults );
+	public function add_settings_api_key() {
+		$value = $this->get_setting( 'api_key_production' );
 
-		$name = esc_attr( $args['name'] );
-		if ( empty( $name ) )
-			return;
-
-		if ( is_null( $args['class'] ) )
-			$args['class'] = 'regular-text';
-
-		$value = $this->get_setting( $args['name'] );
-
-		?><input type="text" name="<?php echo esc_attr( $this->settings_key ); ?>[<?php echo $name; ?>]" class="<?php echo esc_attr( $args['class'] ); ?>" id="field-<?php echo $name; ?>" value="<?php echo esc_attr( $value ); ?>" /><?php
+		?><input type="text" name="<?php echo esc_attr( $this->settings_key ); ?>[api_key_production]" class="regular-text" id="field-api_key_production" value="<?php echo esc_attr( $value ); ?>" /><?php
 	}
 
 	/**
@@ -391,7 +377,10 @@ class Authy_WP {
 
 				<?php do_settings_sections( $this->settings_page ); ?>
 
-				<?php submit_button(); ?>
+
+				<p class="submit">
+					<input name="Submit" type="submit" value="<?php esc_attr_e('Save Changes');?>" class="button-primary">
+				</p>
 			</form>
 		</div>
 		<?php
@@ -450,6 +439,7 @@ class Authy_WP {
 	*/
 
 	public function roles_validate ($roles){
+
 		if(!is_array($roles) || empty($roles)){
 			return array();
 		}
@@ -458,10 +448,11 @@ class Authy_WP {
 		$listRoles = $wp_roles->get_names();
 
 		foreach ($roles as $role) {
-			if (!in_array(before_last_bar($roles), $listRoles)) {
-				unset($roles[before_last_bar($role)]);
+			if (!in_array($roles, $listRoles)) {
+				unset($roles[$role]);
 			}
 		}
+
 		return $roles;
 	}
 
