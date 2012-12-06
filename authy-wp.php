@@ -219,6 +219,8 @@ class Authy_WP {
 			) );
 
 			wp_enqueue_style( 'thickbox' );
+			wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js');
+			wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css' );
 		}
 	}
 
@@ -631,7 +633,7 @@ class Authy_WP {
 				<tr>
 					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 					<td>
-						<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
+						<input type="tel" id="authy-cellphone" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
 
 						<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
 					</td>
@@ -640,7 +642,7 @@ class Authy_WP {
 				<tr>
 					<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
 					<td>
-						<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+						<input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 					</td>
 				</tr>
 			</table>
