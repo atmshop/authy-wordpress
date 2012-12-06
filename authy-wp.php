@@ -953,15 +953,17 @@ class Authy_WP {
 					<?php
 				}
 				?>
+				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
+				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
 			</head>
 			<body class='login'>
 				<div id="login">
 					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center;">Two Factor Authentication</h3>
+					<h3 style="text-align: center;">Authy Two Factor Authentication</h3>
 					<div class="alert-info" style="padding:10px; margin:15px 4px; font-size:13px; color:#3A87AD; background-color:#D9EDF7; border-color: #BCE8F1; border-radius: 4px;"><?php _e("For users that don't own a smartphone were send a SMS with Authy Token", 'authy_for_wp'); ?></div>
 					<form method="POST" id="authy_for_wp" action="wp-login.php">
 						<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
-						<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
+						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
 						<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
 						<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
 						<input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit" class="button-primary">
