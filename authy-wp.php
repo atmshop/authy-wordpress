@@ -237,8 +237,6 @@ class Authy_WP {
 		return $links;
 	}
 
-
-
 	/**
 	 * Retrieve a plugin setting
 	 *
@@ -283,21 +281,18 @@ class Authy_WP {
 	* @return boolean
 	*
 	*/
-    public function available_authy_for_role($user) {
-      global $wp_roles;
+	public function available_authy_for_role($user) {
+		global $wp_roles;
+		$available_authy = false;
 
-      $available_authy = false;
+		$authy_roles = get_option('authy_roles');
 
-      $authy_roles = get_option('authy_roles');
-
-      foreach ($user->roles as $role) {
-        if (array_key_exists($role, $authy_roles))
-            $available_authy = true;
-      }
-
-      return $available_authy;
-    }
-
+		foreach ($user->roles as $role) {
+			if (array_key_exists($role, $authy_roles))
+				$available_authy = true;
+		}
+		return $available_authy;
+	}
 
 	/**
 	 * GENERAL OPTIONS PAGE
@@ -349,19 +344,20 @@ class Authy_WP {
 	public function add_settings_roles() {
 		global $wp_roles;
 
-        $roles = $wp_roles->get_names();
-        $listRoles = array();
-        foreach($roles as $key=>$role) {
-            $listRoles[before_last_bar($key)] = before_last_bar($role);
-        }
+		$roles = $wp_roles->get_names();
+		$listRoles = array();
 
-        $selected = get_option('authy_roles', $listRoles);
+		foreach($roles as $key=>$role) {
+			$listRoles[before_last_bar($key)] = before_last_bar($role);
+		}
 
-        foreach ($wp_roles->get_names() as $role) {
-        	?>
-        	<input name='authy_roles[<?php echo strtolower(before_last_bar($role)); ?>]' type='checkbox' value='<?php echo before_last_bar($role); ?>'  <?php if(in_array(before_last_bar($role), $selected)) echo 'checked="checked"'; ?> /> <?php echo before_last_bar($role); ?></br>
-        	<?php
-        }
+		$selected = get_option('authy_roles', $listRoles);
+
+		foreach ($wp_roles->get_names() as $role) {
+			?>
+			<input name='authy_roles[<?php echo strtolower(before_last_bar($role)); ?>]' type='checkbox' value='<?php echo before_last_bar($role); ?>'<?php if(in_array(before_last_bar($role), $selected)) echo 'checked="checked"'; ?> /> <?php echo before_last_bar($role); ?></br>
+			<?php
+		}
 	}
 
 	/**
@@ -370,6 +366,7 @@ class Authy_WP {
 	 * @uses screen_icon, esc_html, get_admin_page_title, settings_fields, do_settings_sections, submit_button
 	 * @return string
 	 */
+
 	public function plugin_settings_page() {
 		$plugin_name = esc_html( get_admin_page_title() );
 		?>
@@ -418,16 +415,16 @@ class Authy_WP {
 
 			switch ( $field['type'] ) {
 				case 'text' :
-						switch ( $field['sanitizer'] ) {
-							case 'alphanumeric' :
-								$value = preg_replace( '#[^a-z0-9]#i', '', $settings[ $field['name' ] ] );
-								break;
+					switch ( $field['sanitizer'] ) {
+						case 'alphanumeric' :
+							$value = preg_replace( '#[^a-z0-9]#i', '', $settings[ $field['name' ] ] );
+							break;
 
-							default:
-							case 'sanitize_text_field' :
-								$value = sanitize_text_field( $settings[ $field['name'] ] );
-								break;
-						}
+						default:
+						case 'sanitize_text_field' :
+							$value = sanitize_text_field( $settings[ $field['name'] ] );
+							break;
+					}
 					break;
 
 				default:
@@ -449,22 +446,15 @@ class Authy_WP {
 	* @return array
 	*/
 
-    public function roles_validate ($roles){
+	public function roles_validate ($roles){
+		if(!is_array($roles) || empty($roles)){
+			return array();
+		}
 
-    	if(!is_array($roles) || empty($roles)){
-    		return array();
-    	}
+		global $wp_roles;
+		$listRoles = $wp_roles->get_names();
+	}
 
-        global $wp_roles;
-        $listRoles = $wp_roles->get_names();
-
-        foreach ($roles as $key) {
-        	if(!in_array($key, $listRoles)) {
-        		unset($roles[$key]);
-        	}
-        }
-        return $roles;
-    }
 	/**
 	 * USER INFORMATION FUNCTIONS
 	 */
@@ -602,9 +592,8 @@ class Authy_WP {
 		$meta = $this->get_authy_data( $user->ID );
 	?>
 		<?php if ( $this->user_has_authy_id( $user->ID ) ) : ?>
-		    <h3><?php echo esc_html( $this->name ); ?></h3>
-
-		    <table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
+			<h3><?php echo esc_html( $this->name ); ?></h3>
+			<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 				<tr>
 					<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable your Authy connection?', 'authy_for_wp' ); ?></label></th>
 					<td>
@@ -616,9 +605,8 @@ class Authy_WP {
 				</tr>
 			</table>
 		<?php elseif ($this->available_authy_for_role($user)) :?>
-		    <h3><?php echo esc_html( $this->name ); ?></h3>
-
-		    <table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
+			<h3><?php echo esc_html( $this->name ); ?></h3>
+			<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 				<tr>
 					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 					<td>
@@ -686,7 +674,7 @@ class Authy_WP {
 	 */
 	public function action_edit_user_profile( $user ) {
 		if ( current_user_can( 'create_users' ) ) {
-		?>
+			?>
 			<h3>Authy Two-factor Authentication</h3>
 
 			<table class="form-table">
@@ -702,8 +690,7 @@ class Authy_WP {
 						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection.', 'authy_for_wp' ); ?></label>
 					</td>
 				</tr>
-				<?php
-				wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
+				<?php wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
 
 				else :
 					$authy_data = $this->get_authy_data( $user->ID );
@@ -913,36 +900,43 @@ class Authy_WP {
 		$username = $user->user_login;
 		?>
 		<html>
-          <head>
-          	<?php
-                global $wp_version;
-                if(version_compare($wp_version, "3.3", "<=")){
-            ?>
-                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
-            <?php
-                }
-                else{
-            ?>
-                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
-                    <link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-            <?php
-                }
-            ?>
-          </head>
-          <body class='login'>
-            <div id="login">
-                <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-          		<h3 style="text-align: center;">Two Factor Authentication</h3>
-	          	<form method="POST" id="authy_for_wp" action="wp-login.php">
+		<head>
+			<?php
+			global $wp_version;
+			if(version_compare($wp_version, "3.3", "<=")){?>
+				<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
+				<?php
+			}else{
+				?>
+				<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
+				<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
+				<?php
+			}
+			?>
+		</head>
+		<body class='login'>global $wp_version;
+				if(version_compare($wp_version, "3.3", "<=")){?>
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
+					<?php
+				}else{
+					?>
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
+					<?php
+				}
+			<div id="login">
+				<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
+				<h3 style="text-align: center;">Two Factor Authentication</h3>
+				<form method="POST" id="authy_for_wp" action="wp-login.php">
 					<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
 					<input type="text" name="authy_token" id="authy_token" class="input" value="" size="20"></label>
 					<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
 					<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
 					<input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit">
-			    </form>
-			    <a href="wp-login.php?action=action_request_sms&u=<?php echo $username ?>"><?php _e('Request SMS Token', 'authy_for_wp');?></a>
+				</form>
+				<a href="wp-login.php?action=action_request_sms&u=<?php echo $username ?>"><?php _e('Request SMS Token', 'authy_for_wp');?></a>
 			</div>
-          </body>
+		</body>
 		<?php
 	}
 
@@ -962,8 +956,8 @@ class Authy_WP {
 		if (isset( $_POST['authy_token'] )) {
 			remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
-	        // Check the specified token
-	        $user = get_user_by('login', $_POST['username']);
+			// Check the specified token
+			$user = get_user_by('login', $_POST['username']);
 			$authy_id = $this->get_user_authy_id( $user->ID );
 			$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
 			$api_check = $this->api->check_token( $authy_id, $authy_token );
@@ -974,29 +968,28 @@ class Authy_WP {
 			elseif ( is_string( $api_check ) )
 				return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
 
-            wp_set_auth_cookie($user->ID);
+			wp_set_auth_cookie($user->ID);
 			wp_safe_redirect($_POST['redirect_to']);
-            exit();
-        }
+			exit();
+		}
 
+		// If have a username
+		if (! empty( $username )) {
+			$user = get_user_by('login', $username);
 
-        // If have a username
-        if (! empty( $username )) {
-        	$user = get_user_by('login', $username);
-
-	        // Don't bother if WP can't provide a user object.
+			// Don't bother if WP can't provide a user object.
 			if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
 				return $user;
 
-            // User must opt in.
-            if ( ! $this->user_has_authy_id( $user->ID ))
-                return $user;
+			// User must opt in.
+			if ( ! $this->user_has_authy_id( $user->ID ))
+				return $user;
 
-	        remove_action('authenticate', 'wp_authenticate_username_password', 20);
+			remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
-	        if (wp_check_password($password, $user->user_pass, $user->ID)) {
-	        	$this->authy_token_form($user, $_POST['redirect_to']);
-	        	exit();
+			if (wp_check_password($password, $user->user_pass, $user->ID)) {
+				$this->authy_token_form($user, $_POST['redirect_to']);
+				exit();
 			}else{
 				$user = new WP_Error('authentication_failed', __('<strong>ERROR</strong>: Invalid username or incorrect password.'));
 				return $user;
