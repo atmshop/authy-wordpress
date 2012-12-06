@@ -286,7 +286,9 @@ class Authy_WP {
 		global $wp_roles;
 		$available_authy = false;
 
-		$authy_roles = get_option('authy_roles');
+		$listRoles = $wp_roles->get_names();
+
+		$authy_roles = get_option('authy_roles', $listRoles);
 
 		foreach ($user->roles as $role) {
 			if (array_key_exists($role, $authy_roles))
@@ -454,6 +456,13 @@ class Authy_WP {
 
 		global $wp_roles;
 		$listRoles = $wp_roles->get_names();
+
+		foreach ($roles as $role) {
+			if (!in_array(before_last_bar($roles), $listRoles)) {
+				unset($roles[before_last_bar($role)]);
+			}
+		}
+		return $roles;
 	}
 
 	/**
@@ -467,6 +476,7 @@ class Authy_WP {
 	 * @param string $email
 	 * @param string $phone
 	 * @param string $country_code
+	 * @param string $force_by_admin
 	 * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, this::clear_authy_data, get_user_meta, update_user_meta
 	 * @return null
 	 */
