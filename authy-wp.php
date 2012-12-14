@@ -1,11 +1,11 @@
 <?php
 /*
  * Plugin Name: Authy for WordPress
- * Plugin URI: http://www.ethitter.com/plugins/authy-for-wordpress/
- * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress. Users opt in for an added level of security that relies on random codes from their mobile devices.
- * Author: Erick Hitter
- * Version: 0.1
- * Author URI: http://www.ethitter.com/
+ * Plugin URI: https://github.com/authy/authy-wordpress
+ * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
+ * Author: Erick Hitter, Authy Inc.
+ * Version: 1.0
+ * Author URI: https://www.authy.com, http://www.ethitter.com/
  * License: GPL2+
  * Text Domain: authy_for_wp
 
@@ -215,11 +215,14 @@ class Authy_WP {
 			wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
 			wp_localize_script( 'authy-wp-profile', 'AuthyForWP', array(
 				'ajax' => $this->get_ajax_url(),
-				'th_text' => __( 'Connection', 'authy_for_wp' ),
-				'button_text' => __( 'Manage Authy Connection', 'authy_for_wp' )
+				'th_text' => __( 'Two-Factor Authentication', 'authy_for_wp' ),
+				'button_text' => __( 'Enable/Disable Authy', 'authy_for_wp' )
 			) );
 
 			wp_enqueue_style( 'thickbox' );
+			wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
+		}elseif ( $current_screen->base == 'user-edit' ) {
+			wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
 			wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
 		}
 	}
@@ -366,7 +369,8 @@ class Authy_WP {
 			<h2><?php echo $plugin_name; ?></h2>
 
 			<?php if ( $this->ready ) : ?>
-				<p><?php _e( "With API keys entered, your users can now enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
+      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their Wordpress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
+      <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy_for_wp' ); ?></p>
 			<?php else : ?>
 				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
 				<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy_for_wp' ); ?></p>
@@ -617,7 +621,7 @@ class Authy_WP {
 				<h3><?php echo esc_html( $this->name ); ?></h3>
 				<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 					<tr>
-						<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable your Authy connection?', 'authy_for_wp' ); ?></label></th>
+						<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable Two Factor Authentication?', 'authy_for_wp' ); ?></label></th>
 						<td>
 							<input type="checkbox" id="<?php echo esc_attr( $this->users_key ); ?>_disable" name="<?php echo esc_attr( $this->users_key ); ?>[disable_own]" value="1" />
 							<label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Yes, disable Authy for your account.', 'authy_for_wp' ); ?></label>
@@ -631,18 +635,17 @@ class Authy_WP {
 			<h3><?php echo esc_html( $this->name ); ?></h3>
 			<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
 				<tr>
-					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
+					<th><label for="phone"><?php _e( 'Country', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="phone"><?php _e( 'Cellphone number', 'authy_for_wp' ); ?></label></th>
 					<td>
 						<input type="tel" id="authy-cellphone" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
 
 						<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
-					</td>
-				</tr>
-
-				<tr>
-					<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
-					<td>
-						<input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
 					</td>
 				</tr>
 			</table>
@@ -706,10 +709,9 @@ class Authy_WP {
 					$name = esc_attr( $this->users_key );
 				?>
 				<tr>
-					<th><label for="<?php echo $name; ?>"><?php _e( "Disable user's Authy connection?", 'authy_for_wp' ); ?></label></th>
+					<th><label for="<?php echo $name; ?>"><?php _e( "Two Factor Authentication", 'authy_for_wp' ); ?></label></th>
 					<td>
-						<input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" />
-						<label for="<?php echo $name; ?>"><?php _e( 'Yes, force user to reset the Authy connection.', 'authy_for_wp' ); ?></label>
+						<input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" checked/>
 					</td>
 				</tr>
 				<?php wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
@@ -718,20 +720,19 @@ class Authy_WP {
 					$authy_data = $this->get_authy_data( $user->ID );
 				?>
 				<tr>
-					<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
+					<p><?php _e("To enable Authy enter the country and cellphone number of the person who is going to use this account.", 'authy_for_wp')?></p>
+					<th><label for="phone"><?php _e( 'Country', 'authy_for_wp' ); ?></label></th>
 					<td>
-						<input type="tel" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
+						<input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+					</td>
+				</tr>
+				<tr>
+					<th><label for="phone"><?php _e( 'Cellphone number', 'authy_for_wp' ); ?></label></th>
+					<td>
+						<input type="tel" class="regular-text" id="authy-cellphone" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
 					</td>
 					<?php wp_nonce_field( $this->users_key . '_edit', "_{$this->users_key}_wpnonce" ); ?>
 				</tr>
-
-				<tr>
-					<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
-					<td>
-						<input type="text" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
-					</td>
-				</tr>
-
 				<?php endif; ?>
 			</table>
 		<?php
@@ -801,9 +802,9 @@ class Authy_WP {
 						switch( $step ) {
 							default :
 								if ( $this->user_has_authy_id( $user_id ) ) : ?>
-									<p><?php _e( 'You already have any Authy ID associated with your account.', 'authy_for_wp' ); ?></p>
+									<p><?php _e( 'Authy is enabled for this account.', 'authy_for_wp' ); ?></p>
 
-									<p><?php printf( __( 'You can disable Authy for your <strong>%s</strong> user by clicking the button below', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+									<p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy_for_wp' ), $user_data->user_login ); ?></p>
 
 									<?php submit_button( __( 'Disable Authy', 'authy_for_wp' ) ); ?>
 
@@ -816,18 +817,18 @@ class Authy_WP {
 
 									<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
 										<tr>
-											<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
+											<th><label for="phone"><?php _e( 'Country', 'authy_for_wp' ); ?></label></th>
+											<td>
+												<input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+											</td>
+										</tr>
+										<tr>
+											<th><label for="phone"><?php _e( 'Cellphone number', 'authy_for_wp' ); ?></label></th>
 											<td>
 												<input type="tel" id="authy-cellphone" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
 											</td>
 										</tr>
 
-										<tr>
-											<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
-											<td>
-												<input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
-											</td>
-										</tr>
 									</table>
 
 									<input type="hidden" name="authy_step" value="check" />
@@ -863,9 +864,9 @@ class Authy_WP {
 										$this->set_authy_data( $user_id, $email, $phone, $country_code );
 
 										if ( $this->user_has_authy_id( $user_id ) ) : ?>
-											<p><?php printf( __( 'Congratulations, Authy is now configured for your <strong>%s</strong> user account.', 'authy_for_wp' ), $user_data->user_login ); ?></p>
+											<p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy_for_wp' ), $user_data->user_login ); ?></p>
 
-											<p><?php _e( 'Until disabled, you will be asked for an Authy token each time you log in.', 'authy_for_wp' ); ?></p>
+											<p><?php _e( 'We\'ve sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we\'ll automatically send you a text-message to your cellphone' . $phone . 'on every login with the token that you need to use for when you login.', 'authy_for_wp' ); ?></p>
 
 											<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy_for_wp' ); ?></a></p>
 										<?php else : ?>
@@ -915,8 +916,9 @@ class Authy_WP {
 	 */
 	public function action_edit_user_profile_update( $user_id ) {
 		if ( isset( $_POST["_{$this->users_key}_wpnonce"] ) && wp_verify_nonce( $_POST["_{$this->users_key}_wpnonce"], $this->users_key . '_disable' ) ) {
-			if ( isset( $_POST[ $this->users_key ] ) )
+			if ( !isset( $_POST[ $this->users_key ] ) ){
 				$this->clear_authy_data( $user_id );
+			}
 		}else{
 			$email = $_POST['email'];
 			$phone = $_POST['authy_for_wp_user']['phone'];
@@ -938,8 +940,9 @@ class Authy_WP {
 	 * @return string
 	 */
 	public function authy_token_form($user, $redirect) {
-		$username = $user->user_login;
-		?>
+    $username = $user->user_login;
+    $user_data = $this->get_authy_data( $user->ID );
+    ?>
 		<html>
 			<head>
 				<?php
@@ -961,8 +964,9 @@ class Authy_WP {
 			<body class='login'>
 				<div id="login">
 					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center;">Authy Two Factor Authentication</h3>
-					<div class="alert-info" style="padding:10px; margin:15px 4px; font-size:13px; color:#3A87AD; background-color:#D9EDF7; border-color: #BCE8F1; border-radius: 4px;"><?php _e("For users that don't own a smartphone were send a SMS with Authy Token", 'authy_for_wp'); ?></div>
+					<h3 style="text-align: center;">Authy Two-Factor Authentication</h3>
+					<div class="alert-info" style="padding:10px; margin:15px 4px; font-size:13px; color:#3A87AD; background-color:#D9EDF7; border-color: #BCE8F1; border-radius: 4px;"><?php _e("Use the Authy App to enter the token. If you don't have the Authy App we sent you the Authy Token via text-message to: " . $user_data['phone'], 'authy_for_wp'); ?></div>
+
 					<form method="POST" id="authy_for_wp" action="wp-login.php">
 						<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
 						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
