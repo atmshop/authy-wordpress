@@ -1,18 +1,19 @@
 # Authy Wordpress Plugin
 
-Add [Authy](http://www.authy.com) two-factor authentication to WordPress. Users opt in for an added level of security that relies on random codes from their mobile devices.
+Add [Authy](http://www.authy.com) two-factor authentication to WordPress.
 
-## Description
+With Authy you can control all aspects of Two Factor Authentication for
+your Wordpress Blog.
 
-Enable the plugin, enter your [Authy](http://www.authy.com/) API keys, and your users can enable Authy on their accounts.
+## Installation 
 
-Once users configure Authy through their WordPress user profiles, any login attempts will require an Authy token in addition to the account username and password.
+1. Get your Authy API Key at www.authy.com/signup. 
+2. Install the plugin either via your site's dashboard, or by downloading the plugin from WordPress.org and uploading the files to your server.
+3. Activate plugin through the WordPress Plugins menu.
+4. Navigate to Settings > Authy for WP to enter your Authy API keys.
 
-## Installation
 
-1. Install the plugin either via your site's dashboard, or by downloading the plugin from WordPress.org and uploading the files to your server.
-2. Activate plugin through the WordPress Plugins menu.
-3. Navigate to Settings > Authy for WP to enter your Authy API keys.
+## Frequently Asked Questions 
 
 ## How can a user enable authy?
 
