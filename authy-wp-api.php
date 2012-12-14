@@ -115,15 +115,16 @@ class Authy_WP_API {
 
 		// Make API request up to three times and check responding status code
 		for ( $i = 1; $i <= 3; $i ++ ) {
-			$response = wp_remote_head( $endpoint );
+			$response = wp_remote_get($endpoint);
 			$status_code = wp_remote_retrieve_response_code( $response );
+			$body = wp_remote_retrieve_body($response);
+			$body = get_object_vars(json_decode($body));
 
-			if ( $status_code == 200 )
+			if ( $status_code == 200 && strtolower($body['success'])  == 'true')
 				return true;
 			elseif ( $status_code == 401)
-				return __( 'The Authy token provided could not be verified. Please try again.', 'authy_wp' );
+				return __( 'Invalid Token.', 'authy_wp' );
 		}
-
 		return false;
 	}
 
@@ -143,8 +144,7 @@ class Authy_WP_API {
 
 			if ( $status_code == 200)
 				return true;
-
-			return false;
 		}
+		return false;
 	}
 }
