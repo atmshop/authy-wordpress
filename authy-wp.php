@@ -210,8 +210,9 @@ class Authy_WP {
 
 		global $current_screen;
 
-		if ( $current_screen->base == 'profile' ) {
+		if ( $current_screen->base == 'profile') {
 			wp_enqueue_script( 'authy-wp-profile', plugins_url( 'assets/authy-wp-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.01, true );
+			wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
 			wp_localize_script( 'authy-wp-profile', 'AuthyForWP', array(
 				'ajax' => $this->get_ajax_url(),
 				'th_text' => __( 'Connection', 'authy_for_wp' ),
@@ -219,8 +220,7 @@ class Authy_WP {
 			) );
 
 			wp_enqueue_style( 'thickbox' );
-			wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js');
-			wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css' );
+			wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
 		}
 	}
 
@@ -747,6 +747,7 @@ class Authy_WP {
 	 */
 	public function ajax_get_id() {
 		// If nonce isn't set, bail
+
 		if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
 			?><script type="text/javascript">self.parent.tb_remove();</script><?php
 			exit;
@@ -766,6 +767,8 @@ class Authy_WP {
 				wp_print_scripts( array( 'jquery' ) );
 				wp_print_styles( array( 'colors' ) );
 			?>
+			<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
+			<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
 
 			<style type="text/css">
 				body {
@@ -815,14 +818,14 @@ class Authy_WP {
 										<tr>
 											<th><label for="phone"><?php _e( 'Mobile number', 'authy_for_wp' ); ?></label></th>
 											<td>
-												<input type="tel" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
+												<input type="tel" id="authy-cellphone" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
 											</td>
 										</tr>
 
 										<tr>
 											<th><label for="phone"><?php _e( 'Country code', 'authy_for_wp' ); ?></label></th>
 											<td>
-												<input type="text" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+												<input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
 											</td>
 										</tr>
 									</table>
@@ -838,7 +841,12 @@ class Authy_WP {
 
 							case 'disable' :
 								if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' ) )
-									$this->clear_authy_data( $user_id );
+									$this->clear_authy_data( $user_id );?>
+
+								<p><?php print_r( __('Authy was disabled', 'authy_for_wp'));?></p>
+								<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy_for_wp' ); ?></a></p>
+								<?php
+									exit;
 
 								wp_safe_redirect( $this->get_ajax_url() );
 								exit;
@@ -938,6 +946,7 @@ class Authy_WP {
 				global $wp_version;
 				if(version_compare($wp_version, "3.3", "<=")){?>
 					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
 					<?php
 				}else{
 					?>
