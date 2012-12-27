@@ -1,11 +1,11 @@
-# Authy Wordpress Plugin
+# Authy WordPress Plugin
 
 Add [Authy](http://www.authy.com) two-factor authentication to WordPress.
 
 With Authy you can control all aspects of Two Factor Authentication for
-your Wordpress Blog.
+your WordPress Blog.
 
-Tested from Wordpress version 3.0 to 3.5
+Tested from WordPress version 3.0 to 3.5
 
 ## Installation
 
@@ -19,7 +19,7 @@ Tested from Wordpress version 3.0 to 3.5
 
 ## How can a user enable authy?
 
-The user should go to Wordpress profile screen and add your mobile number and country code.
+The user should go to WordPress profile screen and add your mobile number and country code.
 
 ## How can a user disable Authy after enabling it?
 

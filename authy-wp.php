@@ -369,7 +369,7 @@ class Authy_WP {
 			<h2><?php echo $plugin_name; ?></h2>
 
 			<?php if ( $this->ready ) : ?>
-      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their Wordpress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
+      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
       <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy_for_wp' ); ?></p>
 			<?php else : ?>
 				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
