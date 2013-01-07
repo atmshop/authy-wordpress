@@ -369,7 +369,7 @@ class Authy_WP {
 			<h2><?php echo $plugin_name; ?></h2>
 
 			<?php if ( $this->ready ) : ?>
-      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their Wordpress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
+      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
       <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy_for_wp' ); ?></p>
 			<?php else : ?>
 				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
@@ -954,6 +954,7 @@ class Authy_WP {
 				}else{
 					?>
 					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo includes_url('css/buttons.css'); ?>" />
 					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
 					<?php
 				}
@@ -961,18 +962,20 @@ class Authy_WP {
 				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
 				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
 			</head>
-			<body class='login'>
+			<body class='login wp-core-ui'>
 				<div id="login">
 					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center;">Authy Two-Factor Authentication</h3>
-					<div class="alert-info" style="padding:10px; margin:15px 4px; font-size:13px; color:#3A87AD; background-color:#D9EDF7; border-color: #BCE8F1; border-radius: 4px;"><?php _e("Use the Authy App to enter the token. If you don't have the Authy App we sent you the Authy Token via text-message to: " . $user_data['phone'], 'authy_for_wp'); ?></div>
+					<h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
+					<p class="message"><?php _e("Use the Authy App to enter the token. If you don't have the Authy App we sent you the Authy Token via text-message to: " . $user_data['phone'], 'authy_for_wp'); ?></p>
 
 					<form method="POST" id="authy_for_wp" action="wp-login.php">
 						<label for="authy_token"><?php _e( 'Authy Token', 'authy_for_wp' ); ?><br>
 						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
 						<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
 						<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
-						<input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit" class="button-primary">
+						<p class="submit">
+						  <input type="submit" value="<?php echo _e('Login', 'authy_for_wp') ?>" id="wp_submit" class="button button-primary button-large">
+						</p>
 					</form>
 				</div>
 			</body>
