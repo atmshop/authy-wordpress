@@ -1,11 +1,11 @@
 <?php
 /*
- * Plugin Name: Authy for WordPress
+ * Plugin Name: Authy Two Factor Authentication
  * Plugin URI: https://github.com/authy/authy-wordpress
  * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
- * Author: Erick Hitter, Authy Inc.
+ * Author: Authy Inc, Erick Hitter
  * Version: 1.0
- * Author URI: https://www.authy.com, http://www.ethitter.com/
+ * Author URI: https://www.authy.com
  * License: GPL2+
  * Text Domain: authy_for_wp
 
