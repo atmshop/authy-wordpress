@@ -1018,24 +1018,25 @@ class Authy_WP {
 
 		// If have a username
 		if (! empty( $username )) {
-			$user = get_user_by('login', $username);
+			$userWP = get_user_by('login', $username);
 
 			// Don't bother if WP can't provide a user object.
-			if ( ! is_object( $user ) || ! property_exists( $user, 'ID' ) )
-				return $user;
+			if ( ! is_object( $userWP ) || ! property_exists( $userWP, 'ID' ) )
+				return $userWP;
 
 			// User must opt in.
-			if ( ! $this->user_has_authy_id( $user->ID ))
+			if ( ! $this->user_has_authy_id( $userWP->ID ))
 				return $user;
 
 			remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
-			if (wp_check_password($password, $user->user_pass, $user->ID)) {
+			$user = wp_authenticate_username_password($user, $username, $password);
+
+			if (!is_wp_error($user)) {
 				$this->action_request_sms($username);
 				$this->authy_token_form($user, $_POST['redirect_to']);
 				exit();
 			}else{
-				$user = new WP_Error('authentication_failed', __('<strong>ERROR</strong>: Invalid username or incorrect password.'));
 				return $user;
 			}
 		}
