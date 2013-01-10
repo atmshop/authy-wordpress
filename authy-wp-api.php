@@ -121,7 +121,7 @@ class Authy_WP_API {
 			$body = wp_remote_retrieve_body($response);
 			$body = get_object_vars(json_decode($body));
 
-			if ( $status_code == 200 && strtolower($body['success'])  == 'true')
+			if ( $status_code == 200 && strtolower($body['token'])  == 'is valid')
 				return true;
 			elseif ( $status_code == 401)
 				return __( 'Invalid Token.', 'authy_wp' );
