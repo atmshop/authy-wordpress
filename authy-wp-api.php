@@ -138,7 +138,7 @@ class Authy_WP_API {
 
 	public function request_sms($id) {
 		$endpoint = sprintf( '%s/protected/json/sms/%d', $this->api_endpoint, $id );
-		$endpoint = add_query_arg( array('api_key' => $this->api_key, 'force' => 'true'), $endpoint);
+		$endpoint = add_query_arg( array('api_key' => $this->api_key), $endpoint);
 		$response = wp_remote_head($endpoint);
 		$status_code = wp_remote_retrieve_response_code($response);
 
