@@ -314,7 +314,7 @@ class Authy_WP {
 	 */
 	public function register_settings_page_sections() {
 		add_settings_field('api_key_production', __('Production API Key', 'authy_for_wp'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
-		add_settings_field('authy_roles', __('Enable for roles:', 'authy_for_wp'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
+		add_settings_field('authy_roles', __('Enable for roles', 'authy_for_wp'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
 	}
 
 	/**
@@ -369,9 +369,11 @@ class Authy_WP {
 			<h2><?php echo $plugin_name; ?></h2>
 
 			<?php if ( $this->ready ) : ?>
+      <?php $details = $this->api->application_details();	?>
       <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy_for_wp' ); ?></p>
       <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy_for_wp' ); ?></p>
-			<?php else : ?>
+
+      <?php else :  ?>
 				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy_for_wp' ), 'http://www.authy.com/' ); ?></p>
 				<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy_for_wp' ); ?></p>
 				<p><?php printf( __( "Until your API keys are entered, the %s plugin cannot function.", 'authy_for_wp' ), $plugin_name ); ?></p>
@@ -383,11 +385,32 @@ class Authy_WP {
 
 				<?php do_settings_sections( $this->settings_page ); ?>
 
-
 				<p class="submit">
 					<input name="Submit" type="submit" value="<?php esc_attr_e('Save Changes');?>" class="button-primary">
 				</p>
 			</form>
+
+
+      <?php if( !empty($details) ){ ?>
+				<h2>Application Details</h2>
+
+				<table class='widefat' style="width:400px;">
+					<tbody>
+						<tr>
+							<th><?php printf(__('Application name', 'authy_for_wp')); ?></th>
+							<td><?php print $details['app']->name ?></td>
+						</tr>
+						<tr>
+							<th><?php printf(__('Plan', 'authy_for_wp')); ?></th>
+							<td><?php print ucfirst($details['app']->plan) ?></td>
+						</tr>
+					</tbody>
+				</table>
+
+				<?php if($details['app']->plan == 'sandbox'){ ?>
+					<strong><?php _e( "* To enable text-messages your app needs to be on the Starter plan(free) or higher.") ?></strong>
+				<?php }
+      }?>
 		</div>
 		<?php
 	}

@@ -147,4 +147,22 @@ class Authy_WP_API {
 
 		return false;
 	}
+
+  /**
+  * Get application details
+  * @return array
+  */
+	public function application_details() {
+		$endpoint = sprintf( '%s/protected/json/app/details', $this->api_endpoint );
+		$endpoint = add_query_arg( array('api_key' => $this->api_key), $endpoint);
+		$response = wp_remote_get($endpoint);
+		$status_code = wp_remote_retrieve_response_code($response);
+		$body = wp_remote_retrieve_body($response);
+		$body = get_object_vars(json_decode($body));
+
+		if ( $status_code == 200)
+			return $body;
+
+		return array();
+	}
 }
