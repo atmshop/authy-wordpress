@@ -357,7 +357,7 @@ class Authy {
 	/**
 	 * Render settings page
 	 *
-	 * @uses screen_icon, esc_html, get_admin_page_title, settings_fields, do_settings_sections, submit_button
+	 * @uses screen_icon, esc_html, get_admin_page_title, settings_fields, do_settings_sections
 	 * @return string
 	 */
 
@@ -765,7 +765,7 @@ class Authy {
 	/**
 	 * Ajax handler for users' connection manager
 	 *
-	 * @uses wp_verify_nonce, get_current_user_id, get_userdata, this::get_authy_data, wp_print_scripts, wp_print_styles, body_class, esc_url, this::get_ajax_url, this::user_has_authy_id, _e, __, submit_button, wp_nonce_field, esc_attr, this::clear_authy_data, wp_safe_redirect, sanitize_email, this::set_authy_data
+	 * @uses wp_verify_nonce, get_current_user_id, get_userdata, this::get_authy_data, wp_print_scripts, wp_print_styles, body_class, esc_url, this::get_ajax_url, this::user_has_authy_id, _e, __, wp_nonce_field, esc_attr, this::clear_authy_data, wp_safe_redirect, sanitize_email, this::set_authy_data
 	 * @action wp_ajax_{$this->users_page}
 	 * @return string
 	 */
@@ -829,7 +829,9 @@ class Authy {
 
 									<p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy' ), $user_data->user_login ); ?></p>
 
-									<?php submit_button( __( 'Disable Authy', 'authy' ) ); ?>
+                  <p class="submit">
+										<input name="Disable" type="submit" value="<?php esc_attr_e('Disable Authy');?>" class="button-primary">
+									</p>
 
 									<input type="hidden" name="authy_step" value="disable" />
 									<?php wp_nonce_field( $this->users_key . '_ajax_disable' ); ?>
@@ -857,7 +859,9 @@ class Authy {
 									<input type="hidden" name="authy_step" value="check" />
 									<?php wp_nonce_field( $this->users_key . '_ajax_check' ); ?>
 
-									<?php submit_button( __( 'Continue', 'authy' ) ); ?>
+									<p class="submit">
+										<input name="Continue" type="submit" value="<?php esc_attr_e('Continue');?>" class="button-primary">
+									</p>
 
 								<?php endif;
 
