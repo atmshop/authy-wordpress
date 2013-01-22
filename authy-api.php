@@ -1,14 +1,14 @@
 <?php
 /**
- * AUTHY FOR WP API CLASS
+ * AUTHY API CLASS
  *
  * Handles Authy API requests in a WordPress way.
  *
- * @package Authy for WordPress
- * @since 0.1
+ * @package Authy
+ * @since 1.0.0
  */
 
-class Authy_WP_API {
+class Authy_API {
 	/**
 	 * Class variables
 	 */
@@ -26,11 +26,11 @@ class Authy_WP_API {
 	 * @return object
 	 */
 	public static function instance( $api_key, $api_endpoint ) {
-		if ( ! is_a( self::$__instance, 'Authy_WP_API' ) ) {
+		if ( ! is_a( self::$__instance, 'Authy_API' ) ) {
 			if ( is_null( $api_key ) || is_null( $api_endpoint ) )
 				return null;
 
-			self::$__instance = new Authy_WP_API;
+			self::$__instance = new Authy_API;
 
 			self::$__instance->api_key = $api_key;
 			self::$__instance->api_endpoint = $api_endpoint;
@@ -124,7 +124,7 @@ class Authy_WP_API {
 			if ( $status_code == 200 && strtolower($body['token'])  == 'is valid')
 				return true;
 			elseif ( $status_code == 401)
-				return __( 'Invalid Token.', 'authy_wp' );
+				return __( 'Invalid Token.', 'authy' );
 		}
 
 		return false;
