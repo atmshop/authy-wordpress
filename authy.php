@@ -124,6 +124,10 @@ class Authy {
 
 			// Authentication
 			add_filter( 'authenticate', array( $this, 'authenticate_user'), 10, 3);
+
+			// Disable XML-RPC
+			if ( $this->get_setting('disable_xmlrpc') )
+				add_filter( 'xmlrpc_enabled', '__return_false' );
 		}
 	}
 
@@ -140,6 +144,12 @@ class Authy {
 				'label'     => __( 'Production API Key', 'authy' ),
 				'type'      => 'text',
 				'sanitizer' => 'alphanumeric'
+			),
+			array(
+				'name'      => 'disable_xmlrpc',
+				'label'     => __( 'Disable external apps', 'authy_wp' ),
+				'type'      => 'checkbox',
+				'sanitizer' => null
 			)
 		);
 	}
@@ -257,7 +267,8 @@ class Authy {
 			$this->settings = get_option( $this->settings_key );
 			$this->settings = wp_parse_args( $this->settings, array(
 				'api_key_production'  => '',
-				'environment'         => apply_filters( 'authy_environment', 'production' )
+				'environment'         => apply_filters( 'authy_environment', 'production' ),
+				'disable_xmlrpc'      => true
 			) );
 		}
 
@@ -315,6 +326,7 @@ class Authy {
 	public function register_settings_page_sections() {
 		add_settings_field('api_key_production', __('Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
 		add_settings_field('authy_roles', __('Enable for roles', 'authy'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
+		add_settings_field('disable_xmlrpc', __('Disable external apps', 'authy'), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default');
 	}
 
 	/**
@@ -334,7 +346,6 @@ class Authy {
 	* @uses $wp_roles
 	* @return string
 	*/
-
 	public function add_settings_roles() {
 		global $wp_roles;
 
@@ -352,6 +363,22 @@ class Authy {
 			<input name='authy_roles[<?php echo strtolower(before_last_bar($role)); ?>]' type='checkbox' value='<?php echo before_last_bar($role); ?>'<?php if(in_array(before_last_bar($role), $selected)) echo 'checked="checked"'; ?> /> <?php echo before_last_bar($role); ?></br>
 			<?php
 		}
+	}
+
+	/**
+	* Render settings disable XMLRPC
+	*
+	* @return string
+	*/
+	public function add_settings_disbale_xmlrpc() {
+		$value = $this->get_setting( 'disable_xmlrpc' );
+		?>
+		<label for='<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]'>
+			<input name="<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]" type="checkbox" value="true" <?php if($value) echo 'checked="checked"'; ?> >
+			<span style='color: #bc0b0b;'><?php _e("Require that all interaction with your WordPress Site happen directly from website." , 'authy')?></span>
+		</label>
+		<p class ='description'><?php _e("If you enable this option it will disable remote publishing from other apps such as Wordpress mobile app because the external applications don't support Two-Factor Authentication.", 'authy')?></p>
+		<?php
 	}
 
 	/**
