@@ -1,36 +1,47 @@
-=== Authy for WordPress ===
-Contributors: ethitter
+=== Authy Two Factor Authentication ===
+Contributors: Authy Inc, ethitter
 Tags: authentication, authy, two factor, security, login, authenticate
-Requires at least: 3.5
+Requires at least: 3.0
 Tested up to: 3.5
-Stable tag: 0.1
+Stable tag: 1.0
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
-Add Authy two-factor authentication to WordPress. Users opt in for an added level of security that relies on random codes from their mobile devices.
+Add Authy two-factor authentication to WordPress.
 
 == Description ==
-Enable the plugin, enter your [Authy](http://www.authy.com/) API keys, and your users can enable Authy on their accounts.
+Add [Authy](http://www.authy.com) two-factor authentication to WordPress.
 
-Once users configure Authy through their WordPress user profiles, any login attempts will require an Authy token in addition to the account username and password.
+With Authy you can control all aspects of Two Factor Authentication for your WordPress Blog.
 
-Plugin development is found at https://github.com/ethitter/Authy-for-WP.
+Plugin development is found at https://github.com/authy/authy-wordpress.
 
 == Installation ==
 
-1. Install the plugin either via your site's dashboard, or by downloading the plugin from WordPress.org and uploading the files to your server.
-2. Activate plugin through the WordPress Plugins menu.
-3. Navigate to Settings > Authy for WP to enter your Authy API keys.
+1. Get your Authy API Key at www.authy.com/signup.
+2. Install the plugin either via your site's dashboard, or by downloading the plugin from WordPress.org and uploading the files to your server.
+3. Activate plugin through the WordPress Plugins menu.
+4. Navigate to Settings > Authy for WP to enter your Authy API keys.
 
 == Frequently Asked Questions ==
 
-= How can a user disable Authy after enabling it? =
+= How can a user enable authy?
+The user should go to WordPress profile screen and add your mobile number and country code.
+
+= How can a user disable Authy after enabling it?
 The user should return to his or her WordPress profile screen and manage connections under the section **Authy for WordPress**.
 
-= What if a user loses the mobile device? =
-Any administrator (anyone with the `create_users` capability, actually) can disable Authy on a given user account by navigating to that user's WordPress account profile, and following the instructions under **Authy for WordPress**.
+= Admin can select specific user roles that should authenticate with Authy Two Factor Authentication?
+Yes, The admin should go to settings page of plugin, select the user roles in the list and click Save Changes to save configuration.
+
+= How can the admin asigne Authy Two Factor Authentication to user specific?
+The admin should go to users page, select the user in the list, edit user adding the mobile number and contry code and click update user.
+
+== Screenshots ==
+1. Authy Two-factor authentication page
+2. Plugin Settings page
 
 == Changelog ==
 
-= 0.1 =
+= 1.0 =
 * Initial public release.
