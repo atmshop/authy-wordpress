@@ -839,10 +839,28 @@ class Authy {
 					font-size: 12px;
 				}
 			</style>
+
+			<script type="text/javascript">
+				(function($){
+					$( document ).ready( function() {
+						$('.authy-user-modal p.submit .button-primary').on('click', function(event) {
+							var form = $(this).parents('form');
+							var phone = form.find('input#authy-cellphone').val();
+							var regex = /[0-9]{10,12}/;
+
+							if ( !regex.test(phone) ) {
+								$('#authy-error-message').html('<p>Cellphone must be a valid cellphone number</p>');
+								$('#authy-error-message').show();
+								event.preventDefault();
+							}
+						} );
+					} );
+				})(jQuery);
+			</script>
 		</head><?php
 
 		// iframe body
-		?><body <?php body_class( 'wp-admin wp-core-ui' ); ?>>
+		?><body <?php body_class('wp-admin wp-core-ui authy-user-modal'); ?>>
 			<div class="wrap">
 				<h2>Authy Two-Factor Authentication</h2>
 
@@ -867,6 +885,7 @@ class Authy {
 
 									<p><?php _e( 'To enable Authy for this account, complete the form below, then click <em>Continue</em>.', 'authy' ); ?></p>
 
+									<div id='authy-error-message' class='error' style='display:none;'></div>
 									<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
 										<tr>
 											<th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
