@@ -32,7 +32,7 @@ class Authy {
 	private static $__instance = null;
 
 	// Some plugin info
-	protected $name = 'Authy for WordPress';
+	protected $name = 'Authy Two-Factor Authentication';
 
 	// Parsed settings
 	private $settings = null;
@@ -203,7 +203,7 @@ class Authy {
 	 * @return null
 	 */
 	public function action_admin_menu() {
-		add_options_page( $this->name, 'Authy for WP', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
+		add_options_page( $this->name, 'Authy', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
 		add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
 	}
 
@@ -287,7 +287,7 @@ class Authy {
 	protected function get_ajax_url() {
 		return add_query_arg( array(
 			'action' => $this->users_page,
-			'nonce' => wp_create_nonce( $this->users_key . '_ajax' )
+			'nonce' => wp_create_nonce( $this->users_key . '_ajax' ),
 		), admin_url( 'admin-ajax.php' ) );
 	}
 
@@ -527,16 +527,19 @@ class Authy {
 	 * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, this::clear_authy_data, get_user_meta, update_user_meta
 	 * @return null
 	 */
-	public function set_authy_data( $user_id, $email, $phone, $country_code, $force_by_admin = 'false' ) {
+	public function set_authy_data( $user_id, $email, $phone, $country_code, $force_by_admin = 'false', $authy_id = '') {
 		// Retrieve user's existing Authy ID, or get one from Authy
 		if ( $this->user_has_authy_id( $user_id ) ) {
 			$authy_id = $this->get_user_authy_id( $user_id );
-		} else {
+		} elseif ($authy_id == '') {
 			// Request an Authy ID with given user information
-			$authy_id = (int) $this->api->get_id( $email, $phone, $country_code );
+			$response = $this->api->register_user( $email, $phone, $country_code );
 
-			if ( ! $authy_id )
+			if ( $response->user && $response->user->id ) {
+				$authy_id = $response->user->id;
+			} else {
 				unset( $authy_id );
+			}
 		}
 
 		// Build array of Authy data
@@ -789,35 +792,14 @@ class Authy {
 		}
 	}
 
-	/**
-	 * Ajax handler for users' connection manager
-	 *
-	 * @uses wp_verify_nonce, get_current_user_id, get_userdata, this::get_authy_data, wp_print_scripts, wp_print_styles, body_class, esc_url, this::get_ajax_url, this::user_has_authy_id, _e, __, wp_nonce_field, esc_attr, this::clear_authy_data, wp_safe_redirect, sanitize_email, this::set_authy_data
-	 * @action wp_ajax_{$this->users_page}
-	 * @return string
-	 */
-	public function ajax_get_id() {
-		// If nonce isn't set, bail
-
-		if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
-			?><script type="text/javascript">self.parent.tb_remove();</script><?php
-			exit;
-		}
-
-		// User data
-		$user_id = get_current_user_id();
-		$user_data = get_userdata( $user_id );
-		$authy_data = $this->get_authy_data( $user_id );
-		$errors = false;
-
-		// Step
-		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
-
-		// iframe head
+  /**
+  *
+  */
+  public function ajax_head() {
 		?><head>
 			<?php
-				wp_print_scripts( array( 'jquery' ) );
-				wp_print_styles( array( 'colors' ) );
+				wp_print_scripts( array( 'jquery', 'authy' ) );
+				wp_print_styles( array( 'colors', 'authy' ) );
 			?>
 			<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
 			<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
@@ -840,7 +822,44 @@ class Authy {
 					font-size: 12px;
 				}
 			</style>
+			<script type="text/javascript">
+				(function($){
+					$( document ).ready( function() {
+						$( 'authy-user-modal p.submit' ).append( '<span class="spinner" style="display:none;"></span>' );
+						$('.authy-user-modal p.submit .button-primary').on('click', function(event) {
+							$( this ).siblings( '.spinner' ).show();
+						} );
+					});
+				})(jQuery);
+			</script>
 		</head><?php
+  }
+
+	/**
+	 * Ajax handler for users' connection manager
+	 *
+	 * @uses wp_verify_nonce, get_current_user_id, get_userdata, this::get_authy_data, wp_print_scripts, wp_print_styles, body_class, esc_url, this::get_ajax_url, this::user_has_authy_id, _e, __, wp_nonce_field, esc_attr, this::clear_authy_data, wp_safe_redirect, sanitize_email, this::set_authy_data
+	 * @action wp_ajax_{$this->users_page}
+	 * @return string
+	 */
+	public function ajax_get_id() {
+		// If nonce isn't set, bail
+		if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
+			?><script type="text/javascript">self.parent.tb_remove();</script><?php
+			exit;
+		}
+
+		// User data
+		$user_id = get_current_user_id();
+		$user_data = get_userdata( $user_id );
+		$authy_data = $this->get_authy_data( $user_id );
+		$errors = array();
+
+		// Step
+		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
+
+    //iframe head
+    $this->ajax_head();
 
 		// iframe body
 		?><body <?php body_class('wp-admin wp-core-ui authy-user-modal'); ?>>
@@ -869,8 +888,10 @@ class Authy {
 										$phone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
 										$country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
 
-										if ( $email && $phone && $country_code ) {
-											$this->set_authy_data( $user_id, $email, $phone, $country_code );
+										$response = $this->api->register_user( $email, $phone, $country_code );
+
+										if ( $response->success == 'true' ) {
+											$this->set_authy_data( $user_id, $email, $phone, $country_code, $response->user->id );
 
 											if ( $this->user_has_authy_id( $user_id ) ) { ?>
 												<p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
@@ -878,10 +899,19 @@ class Authy {
 												<p><?php _e( 'We\'ve sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we\'ll automatically send you a text-message to your cellphone ' . $phone . ' on every login with the token that you need to use for when you login.', 'authy' ); ?></p>
 
 												<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-											  <?php exit;
+											  <?php
+											} else { ?>
+												<p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
+
+												<p><?php _e( 'Please try again later.', 'authy' ); ?></p>
+
+												<p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a></p>
+											  <?php
 											}
+											exit;
+
 										} else {
-											$errors = true;
+											$errors = get_object_vars($response->errors);
 										}
 									} ?>
 
@@ -890,8 +920,16 @@ class Authy {
 									<p><?php _e( 'To enable Authy for this account, complete the form below, then click <em>Continue</em>.', 'authy' ); ?></p>
 
 									<?php
-										if ($errors) {
-											?><div class='error'>Error message</div><?php
+										if ( !empty($errors) ) { ?>
+											<div class='error'><?php
+												foreach ($errors as $key => $value) {
+													if ($key == 'country_code') {
+														?><p><strong>Country code</strong> is not valid.</p><?php
+													} else {
+														?><p><strong><?php echo ucfirst($key); ?></strong><?php echo ' ' . $value; ?></p><?php
+													}
+												}?>
+											</div><?php
 										}
 									?>
 

@@ -58,9 +58,9 @@ class Authy_API {
 	 * @param string $phone
 	 * @param string $country_code
 	 * @uses sanitize_email, add_query_arg, wp_remote_post, wp_remote_retrieve_response_code, wp_remote_retrieve_body
-	 * @return int or false
+	 * @return mixed
 	 */
-	public function get_id( $email, $phone, $country_code ) {
+	public function register_user( $email, $phone, $country_code ) {
 		// Sanitize arguments
 		$email = sanitize_email( $email );
 		$phone = preg_replace( '#[^\d]#', '', $phone );
@@ -78,15 +78,15 @@ class Authy_API {
 		// Make API request up to three times and parse response
 		for ( $i = 1; $i <= 3; $i++ ) {
 			$response = wp_remote_post( $endpoint );
+			$status_code = wp_remote_retrieve_response_code( $response );
 
-			if ( '200' == wp_remote_retrieve_response_code( $response ) ) {
+			if ( '200' == $status_code || '400' == $status_code ) {
 				$body = wp_remote_retrieve_body( $response );
 
 				if ( ! empty( $body ) ) {
 					$body = json_decode( $body );
 
-					if ( is_object( $body ) && property_exists( $body, 'user' ) && property_exists( $body->user, 'id' ) )
-						return $body->user->id;
+					return $body;
 				}
 
 				break;
