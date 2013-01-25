@@ -320,11 +320,11 @@ class Authy {
 	/**
 	 * Populate settings page's sections
 	 *
-	 * @uses wp_parse_args, add_settings_field
+	 * @uses add_settings_field
 	 * @return null
 	 */
 	public function register_settings_page_sections() {
-		add_settings_field('api_key_production', __('Authy Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
+		add_settings_field('api_key_production', __('Authy Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default');
 		add_settings_field('authy_roles', __('Allow Authy for the following roles', 'authy'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
 		add_settings_field('disable_xmlrpc', __("Disable external apps that don't support Two-factor Authentication", 'authy'), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default');
 	}
