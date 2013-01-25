@@ -3,7 +3,7 @@
  * Plugin Name: Authy Two Factor Authentication
  * Plugin URI: https://github.com/authy/authy-wordpress
  * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
- * Author: Authy Inc, Erick Hitter
+ * Author: Authy Inc
  * Version: 1.0
  * Author URI: https://www.authy.com
  * License: GPL2+
@@ -141,13 +141,13 @@ class Authy {
 		$this->settings_fields = array(
 			array(
 				'name'      => 'api_key_production',
-				'label'     => __( 'Production API Key', 'authy' ),
+				'label'     => __( 'Authy Production API Key', 'authy' ),
 				'type'      => 'text',
 				'sanitizer' => 'alphanumeric'
 			),
 			array(
 				'name'      => 'disable_xmlrpc',
-				'label'     => __( 'Disable external apps', 'authy_wp' ),
+				'label'     => __( "Disable external apps that don't support Two-factor Authentication", 'authy_wp' ),
 				'type'      => 'checkbox',
 				'sanitizer' => null
 			)
@@ -324,9 +324,9 @@ class Authy {
 	 * @return null
 	 */
 	public function register_settings_page_sections() {
-		add_settings_field('api_key_production', __('Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
-		add_settings_field('authy_roles', __('Enable for roles', 'authy'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
-		add_settings_field('disable_xmlrpc', __('Disable external apps', 'authy'), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default');
+		add_settings_field('api_key_production', __('Authy Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default', $args);
+		add_settings_field('authy_roles', __('Allow Authy for the following roles', 'authy'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
+		add_settings_field('disable_xmlrpc', __("Disable external apps that don't support Two-factor Authentication", 'authy'), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default');
 	}
 
 	/**
@@ -375,9 +375,9 @@ class Authy {
 		?>
 		<label for='<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]'>
 			<input name="<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]" type="checkbox" value="true" <?php if($value) echo 'checked="checked"'; ?> >
-			<span style='color: #bc0b0b;'><?php _e("Require that all interaction with your WordPress Site happen directly from website." , 'authy')?></span>
+			<span style='color: #bc0b0b;'><?php _e("Ensure Two-factor authentication is always respected." , 'authy')?></span>
 		</label>
-		<p class ='description'><?php _e("If you enable this option it will disable remote publishing from other apps such as Wordpress mobile app because the external applications don't support Two-Factor Authentication.", 'authy')?></p>
+		<p class ='description'><?php _e("WordPress mobile app's don't support Two-Factor authentication. If you disable this option you will be able to use the apps but it will bypass Two-Factor Authentication.", 'authy')?></p>
 		<?php
 	}
 
@@ -401,7 +401,7 @@ class Authy {
       <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy' ); ?></p>
 
       <?php else :  ?>
-				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy' ), 'http://www.authy.com/' ); ?></p>
+				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy' ), 'https://www.authy.com/' ); ?></p>
 				<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy' ); ?></p>
 				<p><?php printf( __( "Until your API keys are entered, the %s plugin cannot function.", 'authy' ), $plugin_name ); ?></p>
 			<?php endif; ?>
@@ -435,7 +435,7 @@ class Authy {
 				</table>
 
 				<?php if($details['app']->plan == 'sandbox'){ ?>
-					<strong><?php _e( "* To enable text-messages your app needs to be on the Starter plan(free) or higher.") ?></strong>
+					<strong style='color: #bc0b0b;'><?php _e( "Warning: text-messages won't work on the current plan. Upgrade for free to the Starter plan on your authy.com dashboard to enable text-messages.") ?></strong>
 				<?php }
       }?>
 		</div>
@@ -824,14 +824,14 @@ class Authy {
 			<style type="text/css">
 				body {
 					width: 450px;
-					height: 250px;
+					height: 380px;
 					overflow: hidden;
 					padding: 0 10px 10px 10px;
 				}
 
 				div.wrap {
 					width: 450px;
-					height: 250px;
+					height: 380px;
 					overflow: hidden;
 				}
 
@@ -844,7 +844,7 @@ class Authy {
 		// iframe body
 		?><body <?php body_class( 'wp-admin wp-core-ui' ); ?>>
 			<div class="wrap">
-				<h2>Authy</h2>
+				<h2>Authy Two-Factor Authentication</h2>
 
 				<form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
 
@@ -871,13 +871,13 @@ class Authy {
 										<tr>
 											<th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
 											<td>
-												<input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
+												<input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" required />
 											</td>
 										</tr>
 										<tr>
 											<th><label for="phone"><?php _e( 'Cellphone number', 'authy' ); ?></label></th>
 											<td>
-												<input type="tel" id="authy-cellphone" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
+												<input type="tel" id="authy-cellphone" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" style="width:140px;" />
 											</td>
 										</tr>
 
@@ -926,7 +926,7 @@ class Authy {
 										<?php else : ?>
 											<p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
 
-											<p><?php _e( 'Please try again later.', 'authy' ); ?></p>
+											<p><?php _e( 'Cellphone must be a valid cellphone number.', 'authy' ); ?></p>
 
 											<p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a></p>
 										<?php endif;
