@@ -124,7 +124,7 @@ class Authy_API {
 			if ( $status_code == 200 && strtolower($body['token'])  == 'is valid')
 				return true;
 			elseif ( $status_code == 401)
-				return __( 'Invalid Token.', 'authy' );
+				return __( 'Invalid Authy Token.', 'authy' );
 		}
 
 		return false;
