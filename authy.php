@@ -793,7 +793,10 @@ class Authy {
 	}
 
   /**
+  * Print head element
   *
+  * @uses wp_print_scripts, wp_print_styles
+  * @return @string
   */
   public function ajax_head() {
 		?><head>
@@ -822,16 +825,6 @@ class Authy {
 					font-size: 12px;
 				}
 			</style>
-			<script type="text/javascript">
-				(function($){
-					$( document ).ready( function() {
-						$( 'authy-user-modal p.submit' ).append( '<span class="spinner" style="display:none;"></span>' );
-						$('.authy-user-modal p.submit .button-primary').on('click', function(event) {
-							$( this ).siblings( '.spinner' ).show();
-						} );
-					});
-				})(jQuery);
-			</script>
 		</head><?php
   }
 
