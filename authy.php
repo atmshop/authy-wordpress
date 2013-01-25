@@ -808,6 +808,7 @@ class Authy {
 		$user_id = get_current_user_id();
 		$user_data = get_userdata( $user_id );
 		$authy_data = $this->get_authy_data( $user_id );
+		$errors = false;
 
 		// Step
 		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
@@ -839,24 +840,6 @@ class Authy {
 					font-size: 12px;
 				}
 			</style>
-
-			<script type="text/javascript">
-				(function($){
-					$( document ).ready( function() {
-						$('.authy-user-modal p.submit .button-primary').on('click', function(event) {
-							var form = $(this).parents('form');
-							var phone = form.find('input#authy-cellphone').val();
-							var regex = /[0-9]{10,12}/;
-
-							if ( !regex.test(phone) ) {
-								$('#authy-error-message').html('<p>Cellphone must be a valid cellphone number</p>');
-								$('#authy-error-message').show();
-								event.preventDefault();
-							}
-						} );
-					} );
-				})(jQuery);
-			</script>
 		</head><?php
 
 		// iframe body
@@ -869,7 +852,7 @@ class Authy {
 					<?php
 						switch( $step ) {
 							default :
-								if ( $this->user_has_authy_id( $user_id ) ) : ?>
+								if ( $this->user_has_authy_id( $user_id ) ) { ?>
 									<p><?php _e( 'Authy is enabled for this account.', 'authy' ); ?></p>
 
 									<p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy' ), $user_data->user_login ); ?></p>
@@ -879,13 +862,39 @@ class Authy {
 									</p>
 
 									<input type="hidden" name="authy_step" value="disable" />
-									<?php wp_nonce_field( $this->users_key . '_ajax_disable' ); ?>
-								<?php else : ?>
+									<?php wp_nonce_field( $this->users_key . '_ajax_disable' );
+								} else {
+									if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_check' ) ) {
+										$email = sanitize_email( $user_data->user_email );
+										$phone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
+										$country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
+
+										if ( $email && $phone && $country_code ) {
+											$this->set_authy_data( $user_id, $email, $phone, $country_code );
+
+											if ( $this->user_has_authy_id( $user_id ) ) { ?>
+												<p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
+
+												<p><?php _e( 'We\'ve sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we\'ll automatically send you a text-message to your cellphone ' . $phone . ' on every login with the token that you need to use for when you login.', 'authy' ); ?></p>
+
+												<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
+											  <?php exit;
+											}
+										} else {
+											$errors = true;
+										}
+									} ?>
+
 									<p><?php printf( __( 'Authy is not yet configured for your the <strong>%s</strong> account.', 'authy' ), $user_data->user_login ); ?></p>
 
 									<p><?php _e( 'To enable Authy for this account, complete the form below, then click <em>Continue</em>.', 'authy' ); ?></p>
 
-									<div id='authy-error-message' class='error' style='display:none;'></div>
+									<?php
+										if ($errors) {
+											?><div class='error'>Error message</div><?php
+										}
+									?>
+
 									<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
 										<tr>
 											<th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
@@ -902,14 +911,14 @@ class Authy {
 
 									</table>
 
-									<input type="hidden" name="authy_step" value="check" />
+									<input type="hidden" name="authy_step" value="" />
 									<?php wp_nonce_field( $this->users_key . '_ajax_check' ); ?>
 
 									<p class="submit">
 										<input name="Continue" type="submit" value="<?php esc_attr_e('Continue');?>" class="button-primary">
 									</p>
 
-								<?php endif;
+								<?php }
 
 								break;
 
@@ -926,39 +935,6 @@ class Authy {
 								exit;
 
 								break;
-
-							case 'check' :
-								if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_check' ) ) {
-									$email = sanitize_email( $user_data->user_email );
-									$phone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
-									$country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
-
-									if ( $email && $phone && $country_code ) {
-										$this->set_authy_data( $user_id, $email, $phone, $country_code );
-
-										if ( $this->user_has_authy_id( $user_id ) ) : ?>
-											<p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
-
-											<p><?php _e( 'We\'ve sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we\'ll automatically send you a text-message to your cellphone ' . $phone . ' on every login with the token that you need to use for when you login.', 'authy' ); ?></p>
-
-											<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-										<?php else : ?>
-											<p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
-
-											<p><?php _e( 'Cellphone must be a valid cellphone number.', 'authy' ); ?></p>
-
-											<p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a></p>
-										<?php endif;
-
-										exit;
-									}
-								}
-
-								wp_safe_redirect( $this->get_ajax_url() );
-								exit;
-
-								break;
-
 						}
 					?>
 				</form>
