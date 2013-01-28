@@ -269,7 +269,7 @@ class Authy {
 			$this->settings = wp_parse_args( $this->settings, array(
 				'api_key_production'  => '',
 				'environment'         => apply_filters( 'authy_environment', 'production' ),
-				'disable_xmlrpc'      => true
+				'disable_xmlrpc'      => false
 			) );
 		}
 
@@ -1063,7 +1063,7 @@ class Authy {
 				<div id="login">
 					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
 					<h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
-					<p class="message"><?php _e("Use the Authy App to enter the token. If you don't have the Authy App we sent you the Authy Token via text-message to: " . $user_data['phone'], 'authy'); ?></p>
+					<p class="message"><?php _e("You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically send you a token via text-message to cellphone number: ", 'authy'); ?><strong><?php echo $user_data['phone']; ?></strong></p>
 
 					<form method="POST" id="authy" action="wp-login.php">
 						<label for="authy_token"><?php _e( 'Authy Token', 'authy' ); ?><br>
