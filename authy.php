@@ -1098,18 +1098,20 @@ class Authy {
 	*/
 
 	public function authenticate_user($user="", $username="", $password="") {
-		// If the method isn't supported, stop: 
+		// If the method isn't supported, stop:
 		if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
 			return $user;
 
 		if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] )) {
 			$user = get_user_by('login', $_POST['username']);
 
+			// This line prevents WordPress from setting the authentication and display errors.
+			remove_action('authenticate', 'wp_authenticate_username_password', 20);
+
 			// Do 2FA if signature is valid.
 			if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $_POST['authy_signature'])) {
 				// invalidate signature
 				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
-				remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
 				// Check the specified token
 				$authy_id = $this->get_user_authy_id( $user->ID );
@@ -1126,7 +1128,7 @@ class Authy {
 				}
 			}
 
-			return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>'));
+			return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong> Authentication timed out. Please try again.'));
 		}
 
 		// If have a username do password authentication and redirect to 2nd screen.
