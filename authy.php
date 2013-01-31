@@ -1098,7 +1098,7 @@ class Authy {
 	*/
 
 	public function authenticate_user($user="", $username="", $password="") {
-		// If the method isn't supported, stop.
+		// If the method isn't supported, stop: 
 		if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
 			return $user;
 
@@ -1110,24 +1110,23 @@ class Authy {
 				// invalidate signature
 				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
 
-				remove_action('authenticate', 'wp_authenticate_username_password', 20);
 				// Check the specified token
 				$authy_id = $this->get_user_authy_id( $user->ID );
 				$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
 				$api_check = $this->api->check_token( $authy_id, $authy_token);
 
 				// Act on API response
-				if ( $api_check === false )
-					return null;
-				elseif ( is_string( $api_check ) )
+				if ( $api_check === true ) {
+					remove_action('authenticate', 'wp_authenticate_username_password', 20);
+					wp_set_auth_cookie($user->ID);
+					wp_safe_redirect($_POST['redirect_to']);
+					exit();
+				} elseif ( is_string( $api_check ) ) {
 					return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
-
-				wp_set_auth_cookie($user->ID);
-				wp_safe_redirect($_POST['redirect_to']);
-				exit();
+				}
 			}
 
-			return null;
+			return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>'));
 		}
 
 		// If have a username do password authentication and redirect to 2nd screen.
@@ -1140,25 +1139,29 @@ class Authy {
 
 			// User must opt in.
 			if ( ! $this->user_has_authy_id( $userWP->ID ))
-				return $user;
+				return $user; // wordpress will continue authentication.
 
-			remove_action('authenticate', 'wp_authenticate_username_password', 20);
+			$ret = wp_authenticate_username_password($user, $username, $password);
+			if(is_wp_error($ret)) {
+				// there was an error
+				return $ret;
+			}
 
-			$user = wp_authenticate_username_password($user, $username, $password);
+			$user = $ret;
 
 			if (!is_wp_error($user)) {
+				// from here we take care of the authentication.
+				remove_action('authenticate', 'wp_authenticate_username_password', 20);
+
 				// with authy
 				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
 				$this->action_request_sms($username);
 				$this->authy_token_form($user, $_POST['redirect_to']);
 				exit();
-			} else {
-				// without authy
-				return $user;
 			}
 		}
 
-		return null;
+		return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
 	}
 }
 
