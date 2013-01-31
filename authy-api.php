@@ -165,4 +165,28 @@ class Authy_API {
 
 		return array();
 	}
+
+	/**
+	* Verify if the given signature is valid.
+	* @return boolean
+	*/
+	public function verify_signature($user_data, $signature) {
+		if(!isset($user_data['authy_signature'])  || !isset($user_data['signed_at']) ) {
+			return false;
+		}
+
+		if((time() - $user_data['signed_at']) <= 300 && $user_data['authy_signature'] === $signature ) {
+			return true;
+		}
+
+		return false;
+	}
+
+	/**
+	* Generates a signature
+	* @return string
+	*/
+	public function generate_signature() {
+		return wp_generate_password(64, true, true);
+	}
 }

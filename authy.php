@@ -70,7 +70,9 @@ class Authy {
 		'phone'        => null,
 		'country_code' => '+1',
 		'authy_id'     => null,
-		'force_by_admin' => 'false'
+		'force_by_admin' => 'false',
+		'authy_signature' => null,
+		'authy_signed_at' => null
 	);
 
 	/**
@@ -1074,6 +1076,9 @@ class Authy {
 						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
 						<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
 						<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
+						<?php if(isset($user_data['authy_signature']) && isset($user_data['signed_at']) ) { ?>
+							<input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_data['authy_signature']); ?>"/>
+						<?php } ?>
 						<p class="submit">
 						  <input type="submit" value="<?php echo _e('Login', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
 						</p>
@@ -1097,27 +1102,35 @@ class Authy {
 		if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
 			return $user;
 
-		if (isset( $_POST['authy_token'] )) {
-			remove_action('authenticate', 'wp_authenticate_username_password', 20);
-
-			// Check the specified token
+		if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] )) {
 			$user = get_user_by('login', $_POST['username']);
-			$authy_id = $this->get_user_authy_id( $user->ID );
-			$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
-			$api_check = $this->api->check_token( $authy_id, $authy_token );
 
-			// Act on API response
-			if ( $api_check === false )
-				return null;
-			elseif ( is_string( $api_check ) )
-				return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
+			// Do 2FA if signature is valid.
+			if($this->api->verify_signature(get_user_meta($user->ID, $this->users_key, true), $_POST['authy_signature'])) {
+				// invalidate signature
+				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
 
-			wp_set_auth_cookie($user->ID);
-			wp_safe_redirect($_POST['redirect_to']);
-			exit();
+				remove_action('authenticate', 'wp_authenticate_username_password', 20);
+				// Check the specified token
+				$authy_id = $this->get_user_authy_id( $user->ID );
+				$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
+				$api_check = $this->api->check_token( $authy_id, $authy_token);
+
+				// Act on API response
+				if ( $api_check === false )
+					return null;
+				elseif ( is_string( $api_check ) )
+					return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
+
+				wp_set_auth_cookie($user->ID);
+				wp_safe_redirect($_POST['redirect_to']);
+				exit();
+			}
+
+			return null;
 		}
 
-		// If have a username
+		// If have a username do password authentication and redirect to 2nd screen.
 		if (! empty( $username )) {
 			$userWP = get_user_by('login', $username);
 
@@ -1134,13 +1147,18 @@ class Authy {
 			$user = wp_authenticate_username_password($user, $username, $password);
 
 			if (!is_wp_error($user)) {
+				// with authy
+				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
 				$this->action_request_sms($username);
 				$this->authy_token_form($user, $_POST['redirect_to']);
 				exit();
-			}else{
+			} else {
+				// without authy
 				return $user;
 			}
 		}
+
+		return null;
 	}
 }
 
