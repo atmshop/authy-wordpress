@@ -799,7 +799,7 @@ class Authy {
 	*/
 	public function check_user_fields(&$errors, $update, &$user) {
 		$response = $this->api->register_user( $_POST['email'], $_POST['authy_user']['phone'], $_POST['authy_user']['country_code'] );
-		if ($response->errors) {
+		if ($update && $response->errors) {
 			foreach ($response->errors as $attr => $message) {
 
 				if ($attr == 'country_code')
