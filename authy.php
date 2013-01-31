@@ -52,6 +52,7 @@ class Authy {
 	// Data storage keys
 	protected $settings_key = 'authy';
 	protected $users_key = 'authy_user';
+	protected $signature_key = 'user_signature';
 
 	// Settings field placeholders
 	protected $settings_fields = array();
@@ -70,9 +71,7 @@ class Authy {
 		'phone'        => null,
 		'country_code' => '+1',
 		'authy_id'     => null,
-		'force_by_admin' => 'false',
-		'authy_signature' => null,
-		'authy_signed_at' => null
+		'force_by_admin' => 'false'
 	);
 
 	/**
@@ -1045,6 +1044,7 @@ class Authy {
 	public function authy_token_form($user, $redirect) {
     $username = $user->user_login;
     $user_data = $this->get_authy_data( $user->ID );
+	$user_signature = get_user_meta($user->ID, $this->signature_key, true);
     ?>
 		<html>
 			<head>
@@ -1076,8 +1076,8 @@ class Authy {
 						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
 						<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
 						<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
-						<?php if(isset($user_data['authy_signature']) && isset($user_data['signed_at']) ) { ?>
-							<input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_data['authy_signature']); ?>"/>
+						<?php if(isset($user_signature['authy_signature']) && isset($user_signature['signed_at']) ) { ?>
+							<input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_signature['authy_signature']); ?>"/>
 						<?php } ?>
 						<p class="submit">
 						  <input type="submit" value="<?php echo _e('Login', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
@@ -1106,9 +1106,9 @@ class Authy {
 			$user = get_user_by('login', $_POST['username']);
 
 			// Do 2FA if signature is valid.
-			if($this->api->verify_signature(get_user_meta($user->ID, $this->users_key, true), $_POST['authy_signature'])) {
+			if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $_POST['authy_signature'])) {
 				// invalidate signature
-				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
 
 				// Check the specified token
 				$authy_id = $this->get_user_authy_id( $user->ID );
@@ -1154,7 +1154,7 @@ class Authy {
 				remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
 				// with authy
-				update_user_meta($user->ID, $this->users_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
+				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
 				$this->action_request_sms($username);
 				$this->authy_token_form($user, $_POST['redirect_to']);
 				exit();
