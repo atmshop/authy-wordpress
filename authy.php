@@ -1105,7 +1105,7 @@ class Authy {
 		if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] )) {
 			$user = get_user_by('login', $_POST['username']);
 
-			// This line prevents WordPress from setting the authentication and display errors.
+			// This line prevents WordPress from setting the authentication cookie and display errors.
 			remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
 			// Do 2FA if signature is valid.
