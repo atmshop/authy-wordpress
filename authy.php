@@ -1109,6 +1109,7 @@ class Authy {
 			if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $_POST['authy_signature'])) {
 				// invalidate signature
 				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+				remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
 				// Check the specified token
 				$authy_id = $this->get_user_authy_id( $user->ID );
@@ -1117,10 +1118,9 @@ class Authy {
 
 				// Act on API response
 				if ( $api_check === true ) {
-					remove_action('authenticate', 'wp_authenticate_username_password', 20);
 					wp_set_auth_cookie($user->ID);
 					wp_safe_redirect($_POST['redirect_to']);
-					exit();
+					exit(); // redirect without returning anything.
 				} elseif ( is_string( $api_check ) ) {
 					return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
 				}
@@ -1141,6 +1141,9 @@ class Authy {
 			if ( ! $this->user_has_authy_id( $userWP->ID ))
 				return $user; // wordpress will continue authentication.
 
+			// from here we take care of the authentication.
+			remove_action('authenticate', 'wp_authenticate_username_password', 20);
+
 			$ret = wp_authenticate_username_password($user, $username, $password);
 			if(is_wp_error($ret)) {
 				// there was an error
@@ -1150,9 +1153,6 @@ class Authy {
 			$user = $ret;
 
 			if (!is_wp_error($user)) {
-				// from here we take care of the authentication.
-				remove_action('authenticate', 'wp_authenticate_username_password', 20);
-
 				// with authy
 				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
 				$this->action_request_sms($username);

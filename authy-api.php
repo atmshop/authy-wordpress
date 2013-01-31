@@ -187,6 +187,6 @@ class Authy_API {
 	* @return string
 	*/
 	public function generate_signature() {
-		return wp_generate_password(64, true, true);
+		return wp_generate_password(64, false, false);
 	}
 }
