@@ -192,9 +192,8 @@ class Authy_API {
 	}
 
 	/**
-	* Validate the http request
+	* Verify SSL certificates
 	*
-	* @param object $response
 	* @return mixed
 	*/
 	public function curl_ca_certificates() {
