@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/authy/authy-wordpress
  * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
  * Author: Authy Inc
- * Version: 1.0
+ * Version: 1.2
  * Author URI: https://www.authy.com
  * License: GPL2+
  * Text Domain: authy
@@ -130,6 +130,8 @@ class Authy {
 			// Disable XML-RPC
 			if ( $this->get_setting('disable_xmlrpc') )
 				add_filter( 'xmlrpc_enabled', '__return_false' );
+
+			add_action( 'admin_notices', array( $this, 'action_admin_notices' ) );
 		}
 	}
 
@@ -253,6 +255,22 @@ class Authy {
 			$links['settings'] = '<a href="options-general.php?page=' . $this->settings_page . '">' . __( 'Settings', 'authy' ) . '</a>';
 
 		return $links;
+	}
+
+	/**
+	* Display an admin notice when the server doesn't installed a cert bundle.
+	*/
+	public function action_admin_notices() {
+		$response = $this->api->curl_ca_certificates();
+		if ( is_string($response) ){ ?>
+		  <div id="message" class="error">
+				<p>
+					<strong>Error:</strong>
+					<?php echo $response; ?>
+				</p>
+			</div>
+
+		<?php }
 	}
 
 	/**
@@ -397,12 +415,13 @@ class Authy {
 			<?php screen_icon(); ?>
 			<h2><?php echo $plugin_name; ?></h2>
 
-			<?php if ( $this->ready ) : ?>
-      <?php $details = $this->api->application_details();	?>
-      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy' ); ?></p>
-      <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy' ); ?></p>
+			<?php if ( $this->ready ) :
+				$details = $this->api->application_details();
+			?>
+			<p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy' ); ?></p>
+			<p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy' ); ?></p>
 
-      <?php else :  ?>
+			<?php else :  ?>
 				<p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy' ), 'https://www.authy.com/' ); ?></p>
 				<p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy' ); ?></p>
 				<p><?php printf( __( "Until your API keys are entered, the %s plugin cannot function.", 'authy' ), $plugin_name ); ?></p>
@@ -419,8 +438,7 @@ class Authy {
 				</p>
 			</form>
 
-
-      <?php if( !empty($details) ){ ?>
+			<?php if( !empty($details) ){ ?>
 				<h2>Application Details</h2>
 
 				<table class='widefat' style="width:400px;">
@@ -439,7 +457,7 @@ class Authy {
 				<?php if($details['app']->plan == 'sandbox'){ ?>
 					<strong style='color: #bc0b0b;'><?php _e( "Warning: text-messages won't work on the current plan. Upgrade for free to the Starter plan on your authy.com dashboard to enable text-messages.") ?></strong>
 				<?php }
-      }?>
+			}?>
 		</div>
 		<?php
 	}
@@ -1072,7 +1090,7 @@ class Authy {
 				<div id="login">
 					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
 					<h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
-					<p class="message"><?php _e("You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically send you a token via text-message to cellphone number: ", 'authy'); ?><strong><?php echo $user_data['phone']; ?></strong></p>
+					<p class="message"><?php _e("You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically sent you a token via text-message to cellphone number: ", 'authy'); ?><strong><?php echo $user_data['phone']; ?></strong></p>
 
 					<form method="POST" id="authy" action="wp-login.php">
 						<label for="authy_token"><?php _e( 'Authy Token', 'authy' ); ?><br>

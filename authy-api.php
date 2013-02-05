@@ -156,6 +156,7 @@ class Authy_API {
 		$endpoint = sprintf( '%s/protected/json/app/details', $this->api_endpoint );
 		$endpoint = add_query_arg( array('api_key' => $this->api_key), $endpoint);
 		$response = wp_remote_get($endpoint);
+
 		$status_code = wp_remote_retrieve_response_code($response);
 		$body = wp_remote_retrieve_body($response);
 		$body = get_object_vars(json_decode($body));
@@ -188,5 +189,31 @@ class Authy_API {
 	*/
 	public function generate_signature() {
 		return wp_generate_password(64, false, false);
+	}
+
+	/**
+	* Validate the http request
+	*
+	* @param object $response
+	* @return mixed
+	*/
+	public function curl_ca_certificates() {
+		$response = wp_remote_get('https://api.authy.com');
+
+		$pattern = '/Peer certificate cannot be authenticated with known CA certificates/';
+
+		if ( isset($response->errors['http_request_failed']) ) {
+			if ( preg_match($pattern, $response->errors['http_request_failed'][0]) ) {
+				$$message = "We can't verify the Authy SSL certificate with your current SSL certificates.";
+				$message .= "<br> To fix the problem, please do the following:<br> 1. Download the file cacert.pem from <a href='http://curl.haxx.se/docs/caextract.html'>http://curl.haxx.se/docs/caextract.html</a>.";
+				$message .= "<br> 2. Configure curl.cainfo in <strong>php.ini</strong> with the full path to the file downloaded in step 1, something like this: <strong>curl.cainfo=c:\php\cacert.pem</strong>";
+				$message .= "<br> 3. Restart your web server.";
+				return __($message, "authy");
+			} else {
+			  return __($response->errors['http_request_failed'][0], 'authy');
+			}
+		}
+
+		return true;
 	}
 }
