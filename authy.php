@@ -798,14 +798,17 @@ class Authy {
 	*
 	*/
 	public function check_user_fields(&$errors, $update, &$user) {
-		$response = $this->api->register_user( $_POST['email'], $_POST['authy_user']['phone'], $_POST['authy_user']['country_code'] );
-		if ($update && $response->errors) {
-			foreach ($response->errors as $attr => $message) {
+		if ( $update && !empty($_POST['authy_user']['phone'])) {
+			$response = $this->api->register_user( $_POST['email'], $_POST['authy_user']['phone'], $_POST['authy_user']['country_code'] );
 
-				if ($attr == 'country_code')
-					$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid');
-				else
-				  $errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
+			if ($response->errors) {
+				foreach ($response->errors as $attr => $message) {
+
+					if ($attr == 'country_code')
+						$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid');
+					else
+					  $errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
+				}
 			}
 		}
 	}
