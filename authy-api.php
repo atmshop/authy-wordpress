@@ -69,28 +69,22 @@ class Authy_API {
 		// Build API endpoint
 		$endpoint = sprintf( '%s/protected/json/users/new', $this->api_endpoint );
 		$endpoint = add_query_arg( array(
-			'api_key' =>$this->api_key,
+			'api_key' => $this->api_key,
 			'user[email]' => $email,
 			'user[cellphone]' => $phone,
 			'user[country_code]' => $country_code
 		), $endpoint );
 
-		// Make API request up to three times and parse response
-		for ( $i = 1; $i <= 3; $i++ ) {
-			$response = wp_remote_post( $endpoint );
-			$status_code = wp_remote_retrieve_response_code( $response );
+		// Make API request and parse response
+		$response = wp_remote_post( $endpoint );
+		$status_code = wp_remote_retrieve_response_code( $response );
 
-			if ( '200' == $status_code || '400' == $status_code ) {
-				$body = wp_remote_retrieve_body( $response );
+		$body = wp_remote_retrieve_body( $response );
 
-				if ( ! empty( $body ) ) {
-					$body = json_decode( $body );
+		if ( ! empty( $body ) ) {
+			$body = json_decode( $body );
 
-					return $body;
-				}
-
-				break;
-			}
+			return $body;
 		}
 
 		return false;
