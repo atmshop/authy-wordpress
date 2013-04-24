@@ -197,7 +197,7 @@ class Authy_API {
 
 		if ( isset($response->errors['http_request_failed']) ) {
 			if ( preg_match($pattern, $response->errors['http_request_failed'][0]) ) {
-				$$message = "We can't verify the Authy SSL certificate with your current SSL certificates.";
+				$message = "We can't verify the Authy SSL certificate with your current SSL certificates.";
 				$message .= "<br> To fix the problem, please do the following:<br> 1. Download the file cacert.pem from <a href='http://curl.haxx.se/docs/caextract.html'>http://curl.haxx.se/docs/caextract.html</a>.";
 				$message .= "<br> 2. Configure curl.cainfo in <strong>php.ini</strong> with the full path to the file downloaded in step 1, something like this: <strong>curl.cainfo=c:\php\cacert.pem</strong>";
 				$message .= "<br> 3. Restart your web server.";
