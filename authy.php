@@ -53,6 +53,7 @@ class Authy {
 	protected $settings_key = 'authy';
 	protected $users_key = 'authy_user';
 	protected $signature_key = 'user_signature';
+	protected $authy_enabled = 'authy_enabled_key';
 
 	// Settings field placeholders
 	protected $settings_fields = array();
@@ -1190,6 +1191,60 @@ class Authy {
 	}
 
 	/**
+	* Verify authy installation
+	*
+	*/
+	public function verify_authy_installation($user) {
+		$user_data = $this->get_authy_data( $user->ID );
+		?>
+		<html>
+			<head>
+				<?php
+				global $wp_version;
+				if(version_compare($wp_version, "3.3", "<=")){?>
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
+					<?php
+				}else{
+					?>
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo includes_url('css/buttons.css'); ?>" />
+					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
+					<?php
+				}
+				?>
+				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
+				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
+			</head>
+			<body class='login wp-core-ui'>
+				<div id="login">
+					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
+					<h3 style="text-align: center; margin-bottom:10px;"><?php _e("Verify your account", "authy"); ?></h3>
+					<?php
+						$message = "Your cellphone number is (". $user_data['country_code'] .") " . $user_data['phone'];
+						$message .= "To activate your account you need to setup Authy Two-Factor authentication.";
+						$message .= "<br><br> 1. On your phone browser go to <a href='https://www/authy.com/install'>https://www/authy.com/install</a>";
+						$message .= "<br> 2. Install the app and register.";
+						$message .= "<br><br> If you don't have an iPhone, Android or BlackBerry we've automatically sent you a token via text-message.";
+					?>
+
+					<p class="message"><?php echo __($message, 'authy'); ?></p>
+					<form method="POST" id="authy" action="wp-login.php">
+						<label for="authy_token"><?php _e( 'Authy token', 'authy' ); ?></label>
+						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
+						<input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
+
+						<p class="submit">
+						  <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
+						</p>
+					</form>
+				</div>
+			</body>
+		</html>
+		<?php
+	}
+
+	/**
 	* @param mixed $user
 	* @param string $username
 	* @param string $password
@@ -1269,22 +1324,36 @@ class Authy {
 			}
 		}
 
-		// Enable authy 2FA to user
+		// Enable authy 2FA when the admin force this feature
 		if (isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])) {
 			$userWP = get_user_by('login', $_POST['username']);
 
-			// register user on authy application
-			$this->set_authy_data(
-				$userWP->ID,
-				$userWP->user_email,
-				$_POST['authy_user']['cellphone'],
-				$_POST['authy_user']['country_code'],
-				'true'
-			);
+			// Request an Authy ID with given user information
+			$response = $this->api->register_user( $userWP->user_email, $_POST['authy_user']['cellphone'], $_POST['authy_user']['country_code']);
+
+			if ( $response->user && $response->user->id ) {
+				$authy_id = $response->user->id;
+
+				$this->set_authy_data(
+					$userWP->ID,
+					$userWP->user_email,
+					$_POST['authy_user']['cellphone'],
+					$_POST['authy_user']['country_code'],
+					'true',
+					$authy_id
+				);
+
+				// Go to verify authy installation page
+				$this->verify_authy_installation($userWP, );
+				exit();
+			} else {
+				// TODO: Show error from respose
+				return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
+			}
 
 			// redirect to login page
-			wp_redirect( wp_login_url() );
-			exit();
+			// wp_redirect( wp_login_url() );
+			// exit();
 		}
 
 		return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
