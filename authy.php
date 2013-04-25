@@ -24,6 +24,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
+include_once('helpers.php');
+
 class Authy {
 	/**
 	 * Class variables
@@ -263,7 +265,7 @@ class Authy {
 	public function action_admin_notices() {
 		$response = $this->api->curl_ca_certificates();
 		if ( is_string($response) ){ ?>
-		  <div id="message" class="error">
+			<div id="message" class="error">
 				<p>
 					<strong>Error:</strong>
 					<?php echo $response; ?>
@@ -512,7 +514,6 @@ class Authy {
 	* @uses $wp_roles
 	* @return array
 	*/
-
 	public function roles_validate ($roles){
 
 		if(!is_array($roles) || empty($roles)){
@@ -529,6 +530,30 @@ class Authy {
 		}
 
 		return $roles;
+	}
+
+	/**
+	* USER SETTINGS PAGES
+	*/
+
+	/**
+	 * Non-JS connection interface
+	 *
+	 * @param object $user
+	 * @uses this::get_authy_data, esc_attr,
+	 */
+	public function action_show_user_profile( $user ) {
+		$meta = $this->get_authy_data( $user->ID );
+
+		if ( $this->user_has_authy_id( $user->ID ) ) {
+			if (!$this->with_force_by_admin( $user->ID)){ ?>
+				<h3><?php echo esc_html( $this->name ); ?></h3>
+				<?php echo disable_form_on_profile($this->users_key);
+			}
+		}elseif ($this->available_authy_for_role($user)) {?>
+			<h3><?php echo esc_html( $this->name ); ?></h3>
+			<?php echo register_form_on_profile($this->users_key, $meta);
+		}
 	}
 
 	/**
@@ -675,55 +700,6 @@ class Authy {
 	}
 
 	/**
-	 * USER SETTINGS PAGES
-	 */
-
-	/**
-	 * Non-JS connection interface
-	 *
-	 * @param object $user
-	 * @uses this::get_authy_data, esc_attr,
-	 */
-	public function action_show_user_profile( $user ) {
-		$meta = $this->get_authy_data( $user->ID );
-
-		if ( $this->user_has_authy_id( $user->ID ) ) {
-			if (!$this->with_force_by_admin( $user->ID)){ ?>
-				<h3><?php echo esc_html( $this->name ); ?></h3>
-				<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
-					<tr>
-						<th><label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Disable Two Factor Authentication?', 'authy' ); ?></label></th>
-						<td>
-							<input type="checkbox" id="<?php echo esc_attr( $this->users_key ); ?>_disable" name="<?php echo esc_attr( $this->users_key ); ?>[disable_own]" value="1" />
-							<label for="<?php echo esc_attr( $this->users_key ); ?>_disable"><?php _e( 'Yes, disable Authy for your account.', 'authy' ); ?></label>
-
-							<?php wp_nonce_field( $this->users_key . 'disable_own', $this->users_key . '[nonce]' ); ?>
-						</td>
-					</tr>
-				</table>
-			<?php }
-		}elseif ($this->available_authy_for_role($user)) {?>
-			<h3><?php echo esc_html( $this->name ); ?></h3>
-			<table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>">
-				<tr>
-					<th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
-					<td>
-						<input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $meta['country_code'] ); ?>" />
-					</td>
-				</tr>
-				<tr>
-					<th><label for="phone"><?php _e( 'Cellphone number', 'authy' ); ?></label></th>
-					<td>
-						<input type="tel" id="authy-cellphone" class="regular-text" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $meta['phone'] ); ?>" />
-
-						<?php wp_nonce_field( $this->users_key . 'edit_own', $this->users_key . '[nonce]' ); ?>
-					</td>
-				</tr>
-			</table>
-		<?php }
-	}
-
-	/**
 	 * Handle non-JS changes to users' own connection
 	 *
 	 * @param int $user_id
@@ -808,8 +784,8 @@ class Authy {
 					<th><?php _e('Force enable Authy', 'authy'); ?></th>
 					<td>
 						<label for="force-enable">
-						  <input name="<?php echo esc_attr( $this->users_key ); ?>[force_enable_authy]" type="checkbox" value="true" <?php if ($authy_data['force_by_admin'] == 'true') echo 'checked="checked"'; ?> />
-						  <?php _e('Force this user to enable Authy Two-Factor Authentication on the next login.', 'authy'); ?>
+							<input name="<?php echo esc_attr( $this->users_key ); ?>[force_enable_authy]" type="checkbox" value="true" <?php if ($authy_data['force_by_admin'] == 'true') echo 'checked="checked"'; ?> />
+							<?php _e('Force this user to enable Authy Two-Factor Authentication on the next login.', 'authy'); ?>
 						</label>
 					</td>
 				</tr>
@@ -837,20 +813,20 @@ class Authy {
 						if ($attr == 'country_code')
 							$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid');
 						else
-						  $errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
+							$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
 					}
 				}
 			}
 		}
 	}
 
-  /**
-  * Print head element
-  *
-  * @uses wp_print_scripts, wp_print_styles
-  * @return @string
-  */
-  public function ajax_head() {
+	/**
+	* Print head element
+	*
+	* @uses wp_print_scripts, wp_print_styles
+	* @return @string
+	*/
+	public function ajax_head() {
 		?><head>
 			<?php
 				wp_print_scripts( array( 'jquery', 'authy' ) );
@@ -878,7 +854,7 @@ class Authy {
 				}
 			</style>
 		</head><?php
-  }
+	}
 
 	/**
 	 * Ajax handler for users' connection manager
@@ -903,8 +879,8 @@ class Authy {
 		// Step
 		$step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
 
-    //iframe head
-    $this->ajax_head();
+		//iframe head
+		$this->ajax_head();
 
 		// iframe body
 		?><body <?php body_class('wp-admin wp-core-ui authy-user-modal'); ?>>
@@ -912,7 +888,6 @@ class Authy {
 				<h2>Authy Two-Factor Authentication</h2>
 
 				<form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
-
 					<?php
 						switch( $step ) {
 							default :
@@ -921,7 +896,7 @@ class Authy {
 
 									<p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy' ), $user_data->user_login ); ?></p>
 
-                  <p class="submit">
+									<p class="submit">
 										<input name="Disable" type="submit" value="<?php esc_attr_e('Disable Authy');?>" class="button-primary">
 									</p>
 
@@ -948,14 +923,14 @@ class Authy {
 												</p>
 
 												<p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-											  <?php
+												<?php
 											} else { ?>
 												<p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
 
 												<p><?php _e( 'Please try again later.', 'authy' ); ?></p>
 
 												<p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a></p>
-											  <?php
+												<?php
 											}
 											exit;
 
@@ -1090,103 +1065,11 @@ class Authy {
 	 * @uses _e
 	 * @return string
 	 */
-	public function authy_token_form($user, $redirect) {
-    $username = $user->user_login;
-    $user_data = $this->get_authy_data( $user->ID );
-    $user_signature = get_user_meta($user->ID, $this->signature_key, true);
-    ?>
-		<html>
-			<head>
-				<?php
-				global $wp_version;
-				if(version_compare($wp_version, "3.3", "<=")){?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}else{
-					?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo includes_url('css/buttons.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}
-				?>
-				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
-				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
-			</head>
-			<body class='login wp-core-ui'>
-				<div id="login">
-					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
-					<p class="message"><?php _e("You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically sent you a token via text-message to cellphone number: ", 'authy'); ?><strong><?php echo $user_data['phone']; ?></strong></p>
-
-					<form method="POST" id="authy" action="wp-login.php">
-						<label for="authy_token"><?php _e( 'Authy Token', 'authy' ); ?><br>
-						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
-						<input type="hidden" name="redirect_to" value="<?php echo esc_attr($redirect); ?>"/>
-						<input type="hidden" name="username" value="<?php echo esc_attr($username); ?>"/>
-						<?php if(isset($user_signature['authy_signature']) && isset($user_signature['signed_at']) ) { ?>
-							<input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_signature['authy_signature']); ?>"/>
-						<?php } ?>
-						<p class="submit">
-						  <input type="submit" value="<?php echo _e('Login', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
-						</p>
-					</form>
-				</div>
-			</body>
-		</html>
-		<?php
-	}
-
-	/**
-	* Enable authy page
-	*
-	* @param mixed $user
-	* @return string
-	*/
-	public function enable_authy_page($user) {
-		?>
-		<html>
-			<head>
-				<?php
-				global $wp_version;
-				if(version_compare($wp_version, "3.3", "<=")){?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}else{
-					?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo includes_url('css/buttons.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}
-				?>
-				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
-				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
-			</head>
-			<body class='login wp-core-ui'>
-				<div id="login">
-					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center; margin-bottom:10px;">Enable Authy Two-Factor Authentication</h3>
-
-					<p class="message"><?php _e("Your administrator has requested that you add Two-Factor Authentication to your account, please enter your cellphone below to enable.", 'authy'); ?></p>
-					<form method="POST" id="authy" action="wp-login.php">
-						<label for="authy_user[country_code]"><?php _e( 'Country', 'authy' ); ?></label>
-						<input type="text" name="authy_user[country_code]" id="authy-countries" class="input" />
-
-						<label for="authy_user[cellphone]"><?php _e( 'Cellphone number', 'authy' ); ?></label>
-						<input type="tel" name="authy_user[cellphone]" id="authy-cellphone" class="input" />
-						<input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
-
-						<p class="submit">
-						  <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
-						</p>
-					</form>
-				</div>
-			</body>
-		</html>
-		<?php
+	public function authy_token_page($user, $redirect) {
+		$username = $user->user_login;
+		$user_data = $this->get_authy_data( $user->ID );
+		$user_signature = get_user_meta($user->ID, $this->signature_key, true);
+		authy_token_form($username, $user_data, $user_signature);
 	}
 
 	/**
@@ -1241,7 +1124,7 @@ class Authy {
 
 			// Show the enable authy page
 			if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
-				$this->enable_authy_page($userWP);
+				enable_authy_page($userWP);
 				exit();
 			}
 
@@ -1264,7 +1147,7 @@ class Authy {
 				// with authy
 				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
 				$this->action_request_sms($username);
-				$this->authy_token_form($user, $_POST['redirect_to']);
+				$this->authy_token_page($user, $_POST['redirect_to']);
 				exit();
 			}
 		}
