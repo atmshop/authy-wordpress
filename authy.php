@@ -55,7 +55,6 @@ class Authy {
 	protected $settings_key = 'authy';
 	protected $users_key = 'authy_user';
 	protected $signature_key = 'user_signature';
-	protected $authy_enabled = 'authy_enabled_key';
 
 	// Settings field placeholders
 	protected $settings_fields = array();
@@ -810,10 +809,9 @@ class Authy {
 
 				if ($response->errors) {
 					foreach ($response->errors as $attr => $message) {
-
 						if ($attr == 'country_code')
 							$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid');
-						else
+						elseif ($attr != 'message')
 							$errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
 					}
 				}
@@ -1070,61 +1068,17 @@ class Authy {
 		$username = $user->user_login;
 		$user_data = $this->get_authy_data( $user->ID );
 		$user_signature = get_user_meta($user->ID, $this->signature_key, true);
-		authy_token_form($username, $user_data, $user_signature);
+		authy_token_form($username, $user_data, $user_signature, $redirect, $errors);
 	}
 
 	/**
 	* Verify authy installation
-	*
+	* @param mixed $user
+	* @return string
 	*/
-	public function verify_authy_installation($user) {
+	public function verify_authy_installation($user, $errors = '') {
 		$user_data = $this->get_authy_data( $user->ID );
-		?>
-		<html>
-			<head>
-				<?php
-				global $wp_version;
-				if(version_compare($wp_version, "3.3", "<=")){?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/login.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}else{
-					?>
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/wp-admin.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo includes_url('css/buttons.css'); ?>" />
-					<link rel="stylesheet" type="text/css" href="<?php echo admin_url('css/colors-fresh.css'); ?>" />
-					<?php
-				}
-				?>
-				<link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
-				<script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
-			</head>
-			<body class='login wp-core-ui'>
-				<div id="login">
-					<h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
-					<h3 style="text-align: center; margin-bottom:10px;"><?php _e("Verify your account", "authy"); ?></h3>
-					<?php
-						$message = "Your cellphone number is (". $user_data['country_code'] .") " . $user_data['phone'];
-						$message .= "To activate your account you need to setup Authy Two-Factor authentication.";
-						$message .= "<br><br> 1. On your phone browser go to <a href='https://www/authy.com/install'>https://www/authy.com/install</a>";
-						$message .= "<br> 2. Install the app and register.";
-						$message .= "<br><br> If you don't have an iPhone, Android or BlackBerry we've automatically sent you a token via text-message.";
-					?>
-
-					<p class="message"><?php echo __($message, 'authy'); ?></p>
-					<form method="POST" id="authy" action="wp-login.php">
-						<label for="authy_token"><?php _e( 'Authy token', 'authy' ); ?></label>
-						<input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
-						<input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
-
-						<p class="submit">
-						  <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
-						</p>
-					</form>
-				</div>
-			</body>
-		</html>
-		<?php
+		authy_installation_form($user, $user_data, $errors);
 	}
 
 	/**
@@ -1207,8 +1161,8 @@ class Authy {
 			}
 		}
 
-		// Enable authy 2FA when the admin force this feature
-		if (isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])) {
+		// if step is enable_authy and have country_code and phone show the enable authy page
+		if ($_POST['step'] == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])	) {
 			$userWP = get_user_by('login', $_POST['username']);
 
 			// Request an Authy ID with given user information
@@ -1227,16 +1181,38 @@ class Authy {
 				);
 
 				// Go to verify authy installation page
-				$this->verify_authy_installation($userWP, );
-				exit();
+				$this->verify_authy_installation($userWP);
 			} else {
-				// TODO: Show error from respose
-				return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
+				$errors = array();
+				if ($response->errors) {
+					foreach ($response->errors as $attr => $message) {
+						if ($attr == 'country_code')
+							array_push($errors, 'Country code is invalid');
+						elseif ($attr != 'message')
+							array_push($errors, $attr . ' ' . $message);
+					}
+				}
+				enable_authy_page($userWP, $errors);
 			}
+			exit();
+		}
 
-			// redirect to login page
-			// wp_redirect( wp_login_url() );
-			// exit();
+		// If step is verify_installation and have authy_token show the verify authy installation page.
+		if ( $_POST['step'] == 'verify_installation' && isset($_POST['authy_token']) ) {
+			$userWP = get_user_by('login', $_POST['username']);
+			// Check the specified token
+			$authy_id = $this->get_user_authy_id( $userWP->ID );
+			$authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
+			$api_check = $this->api->check_token( $authy_id, $authy_token);
+
+			if ( $api_check === true ) {
+				wp_set_auth_cookie($userWP->ID);
+				wp_safe_redirect(admin_url());
+			} else{
+				// Show the errors
+				$this->verify_authy_installation($userWP, $api_check);
+			}
+			exit(); // redirect without returning anything.
 		}
 
 		return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );

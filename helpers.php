@@ -34,7 +34,7 @@ function authy_header() {
  * @return string
  */
 
-function authy_token_form($username, $user_data, $user_signature) {
+function authy_token_form($username, $user_data, $user_signature, $redirect) {
   ?>
   <html>
     <?php echo authy_header(); ?>
@@ -68,7 +68,7 @@ function authy_token_form($username, $user_data, $user_signature) {
 * @param mixed $user
 * @return string
 */
-function enable_authy_page($user) {
+function enable_authy_page($user, $errors = array()) {
   ?>
   <html>
     <?php echo authy_header(); ?>
@@ -76,7 +76,15 @@ function enable_authy_page($user) {
       <div id="login">
         <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
         <h3 style="text-align: center; margin-bottom:10px;">Enable Authy Two-Factor Authentication</h3>
-
+        <?php
+          if( !empty($errors) ) {
+            $message = '';
+            foreach ($errors as $msg) {
+              $message .= "<strong>ERROR: </strong>" . $msg . '<br>';
+            }
+            ?><div id="login_error"><?php echo __($message, 'authy'); ?></div><?php
+          }
+        ?>
         <p class="message"><?php _e("Your administrator has requested that you add Two-Factor Authentication to your account, please enter your cellphone below to enable.", 'authy'); ?></p>
         <form method="POST" id="authy" action="wp-login.php">
           <label for="authy_user[country_code]"><?php _e( 'Country', 'authy' ); ?></label>
@@ -85,7 +93,7 @@ function enable_authy_page($user) {
           <label for="authy_user[cellphone]"><?php _e( 'Cellphone number', 'authy' ); ?></label>
           <input type="tel" name="authy_user[cellphone]" id="authy-cellphone" class="input" />
           <input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
-
+          <input type="hidden" name="step" value="enable_authy"/>
           <p class="submit">
             <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
           </p>
@@ -140,5 +148,45 @@ function disable_form_on_profile($users_key) {
       </td>
     </tr>
   </table>
+  <?php
+}
+
+/**
+ * Form verify authy installation
+ * @return string
+ */
+function authy_installation_form($user, $user_data, $errors) {
+  ?>
+  <html>
+    <?php echo authy_header(); ?>
+    <body class='login wp-core-ui'>
+        <div id="login">
+          <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
+          <h3 style="text-align: center; margin-bottom:10px;"><?php _e("Verify your account", "authy"); ?></h3>
+          <?php
+            if ( !empty($errors) ) {
+              ?><div id="login_error"><strong><?php echo __('ERROR: ', 'authy'); ?></strong><?php echo __($errors, 'authy'); ?></div><?php
+            }
+            $message = "Your cellphone number is (". $user_data['country_code'] .") " . $user_data['phone'];
+            $message .= "To activate your account you need to setup Authy Two-Factor authentication.";
+            $message .= "<br><br> 1. On your phone browser go to <a href='https://www/authy.com/install'>https://www/authy.com/install</a>";
+            $message .= "<br> 2. Install the app and register.";
+            $message .= "<br><br> If you don't have an iPhone, Android or BlackBerry we've automatically sent you a token via text-message.";
+          ?>
+
+          <p class="message"><?php echo __($message, 'authy'); ?></p>
+          <form method="POST" id="authy" action="wp-login.php">
+            <label for="authy_token"><?php _e( 'Authy token', 'authy' ); ?></label>
+            <input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
+            <input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
+            <input type="hidden" name="step" value="verify_installation"/>
+
+            <p class="submit">
+              <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
+            </p>
+          </form>
+        </div>
+      </body>
+    </html>
   <?php
 }
