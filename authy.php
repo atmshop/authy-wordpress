@@ -1018,10 +1018,10 @@ class Authy {
    * @param string $username
    * @return mixed
    */
-  public function action_request_sms($username) {
+  public function action_request_sms($username, $force = false) {
     $user = get_user_by('login', $username);
     $authy_id = $this->get_user_authy_id( $user->ID );
-    $api_rsms = $this->api->request_sms( $authy_id);
+    $api_rsms = $this->api->request_sms( $authy_id, $force );
     return $api_rsms;
   }
 
@@ -1030,8 +1030,9 @@ class Authy {
    * @return json
    */
   public function request_sms_ajax() {
-    $response = $this->action_request_sms($_GET['username']);
-    echo json_encode($response);
+    $response = $this->action_request_sms($_GET['username'], true);
+    echo $response;
+    die();
   }
 
   /**
