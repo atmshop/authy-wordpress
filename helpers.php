@@ -202,7 +202,10 @@ function authy_installation_form($user, $user_data, $user_signature, $errors) {
 
           <p class='italic-text'>
             <?php echo _e('If you don’t have an iPhone or Android ', 'authy'); ?>
-            <a href="#" class="request-sms-link"><?php echo _e('click here to get the Token as a Text Message.', 'authy'); ?></a>
+            <a href="#" class="request-sms-link"
+              data-username="<?php echo $user->user_login;?>"
+              data-signature="<?php echo esc_attr($user_signature); ?>"><?php echo _e('click here to get the Token as a Text Message.', 'authy'); ?>
+            </a>
           </p>
 
           <label for="authy_token">
@@ -212,14 +215,14 @@ function authy_installation_form($user, $user_data, $user_signature, $errors) {
           </label>
           <input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
           <input type="hidden" name="step" value="verify_installation"/>
-          <?php if(isset($user_signature['authy_signature']) && isset($user_signature['signed_at']) ) { ?>
-            <input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_signature['authy_signature']); ?>"/>
+          <?php if(isset($user_signature)) { ?>
+            <input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_signature); ?>"/>
           <?php } ?>
 
           <input type="submit" value="<?php echo _e('Verify Token', 'authy') ?>" id="wp_submit" class="button button-primary">
           <div class="rsms">
             <img src="<?php echo plugins_url('/assets/images/phone-icon.png', __FILE__); ?>" alt="cellphone">
-            <a href="#" class='request-sms-link' data-username="<?php echo $user->user_login;?>">
+            <a href="#" class='request-sms-link' data-username="<?php echo $user->user_login;?>" data-signature="<?php echo esc_attr($user_signature); ?>">
               <?php echo _e('Get the token via SMS', 'authy'); ?>
             </a>
           </div>

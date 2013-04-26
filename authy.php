@@ -55,6 +55,7 @@ class Authy {
   protected $settings_key = 'authy';
   protected $users_key = 'authy_user';
   protected $signature_key = 'user_signature';
+  protected $authy_data_temp_key = 'authy_data_temp';
 
   // Settings field placeholders
   protected $settings_fields = array();
@@ -130,8 +131,9 @@ class Authy {
       add_filter( 'authenticate', array( $this, 'authenticate_user'), 10, 3);
 
       // Disable XML-RPC
-      if ( $this->get_setting('disable_xmlrpc') )
+      if ( $this->get_setting('disable_xmlrpc') ) {
         add_filter( 'xmlrpc_enabled', '__return_false' );
+      }
 
       // Display notices
       add_action( 'admin_notices', array( $this, 'action_admin_notices' ) );
@@ -226,8 +228,9 @@ class Authy {
    * @return null
    */
   public function action_admin_enqueue_scripts() {
-    if ( ! $this->ready )
+    if ( ! $this->ready ) {
       return;
+    }
 
     global $current_screen;
 
@@ -242,7 +245,7 @@ class Authy {
 
       wp_enqueue_style( 'thickbox' );
       wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
-    }elseif ( $current_screen->base == 'user-edit' ) {
+    } elseif ( $current_screen->base == 'user-edit' ) {
       wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
       wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
     }
@@ -258,8 +261,9 @@ class Authy {
    * @return array
    */
   public function filter_plugin_action_links( $links, $plugin_file ) {
-    if ( strpos( $plugin_file, pathinfo( __FILE__, PATHINFO_FILENAME ) ) !== false )
+    if ( strpos( $plugin_file, pathinfo( __FILE__, PATHINFO_FILENAME ) ) !== false ) {
       $links['settings'] = '<a href="options-general.php?page=' . $this->settings_page . '">' . __( 'Settings', 'authy' ) . '</a>';
+    }
 
     return $links;
   }
@@ -269,15 +273,9 @@ class Authy {
   */
   public function action_admin_notices() {
     $response = $this->api->curl_ca_certificates();
-    if ( is_string($response) ){ ?>
-      <div id="message" class="error">
-        <p>
-          <strong>Error:</strong>
-          <?php echo $response; ?>
-        </p>
-      </div>
-
-    <?php }
+    if ( is_string($response) ) {
+      ?><div id="message" class="error"><p><strong>Error:</strong><?php echo $response; ?></p></div><?php
+    }
   }
 
   /**
@@ -299,8 +297,9 @@ class Authy {
       ) );
     }
 
-    if ( isset( $this->settings[ $key ] ) )
+    if ( isset( $this->settings[ $key ] ) ) {
       $value = $this->settings[ $key ];
+    }
 
     return $value;
   }
@@ -334,8 +333,9 @@ class Authy {
     $authy_roles = get_option('authy_roles', $listRoles);
 
     foreach ($user->roles as $role) {
-      if (array_key_exists($role, $authy_roles))
+      if (array_key_exists($role, $authy_roles)) {
         $available_authy = true;
+      }
     }
     return $available_authy;
   }
@@ -484,8 +484,9 @@ class Authy {
     foreach ( $this->settings_fields as $field ) {
       $field = wp_parse_args( $field, $this->settings_field_defaults );
 
-      if ( ! isset( $settings[ $field['name'] ] ) )
+      if ( ! isset( $settings[ $field['name'] ] ) ) {
         continue;
+      }
 
       switch ( $field['type'] ) {
         case 'text' :
@@ -506,8 +507,9 @@ class Authy {
           break;
       }
 
-      if ( isset( $value ) && ! empty( $value ) )
+      if ( isset( $value ) && ! empty( $value ) ) {
         $settings_validated[ $field['name'] ] = $value;
+      }
     }
 
     return $settings_validated;
@@ -555,7 +557,7 @@ class Authy {
         <h3><?php echo esc_html( $this->name ); ?></h3>
         <?php echo disable_form_on_profile($this->users_key);
       }
-    }elseif ($this->available_authy_for_role($user)) {?>
+    } elseif ($this->available_authy_for_role($user)) {?>
       <h3><?php echo esc_html( $this->name ); ?></h3>
       <?php echo register_form_on_profile($this->users_key, $meta);
     }
@@ -599,8 +601,9 @@ class Authy {
       'force_by_admin' => $force_by_admin
     );
 
-    if ( isset( $authy_id ) )
+    if ( isset( $authy_id ) ) {
       $data_sanitized['authy_id'] = $authy_id;
+    }
 
     $data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
 
@@ -609,11 +612,11 @@ class Authy {
       $this->clear_authy_data( $user_id );
     } else {
       $data = get_user_meta( $user_id, $this->users_key, true );
-      if ( ! is_array( $data ) )
+      if ( ! is_array( $data ) ) {
         $data = array();
+      }
 
       $data[ $this->api_key ] = $data_sanitized;
-
       update_user_meta( $user_id, $this->users_key, $data );
     }
   }
@@ -628,23 +631,27 @@ class Authy {
    */
   protected function get_authy_data( $user_id, $api_key = null ) {
     // Bail without a valid user ID
-    if ( ! $user_id )
+    if ( ! $user_id ) {
       return $this->user_defaults;
+    }
 
     // Validate API key
-    if ( is_null( $api_key ) )
+    if ( is_null( $api_key ) ) {
       $api_key = $this->api_key;
-    else
+    } else {
       $api_key = preg_replace( '#[a-z0-9]#i', '', $api_key );
+    }
 
     // Get meta, which holds all Authy data by API key
     $data = get_user_meta( $user_id, $this->users_key, true );
-    if ( ! is_array( $data ) )
+    if ( ! is_array( $data ) ) {
       $data = array();
+    }
 
     // Return data for this API, if present, otherwise return default data
-    if ( array_key_exists( $api_key, $data ) )
+    if ( array_key_exists( $api_key, $data ) ) {
       return wp_parse_args( $data[ $api_key ], $this->user_defaults );
+    }
 
     return $this->user_defaults;
   }
@@ -682,8 +689,9 @@ class Authy {
   protected function get_user_authy_id( $user_id ) {
     $data = $this->get_authy_data( $user_id );
 
-    if ( is_array( $data ) && is_numeric( $data['authy_id'] ) )
+    if ( is_array( $data ) && is_numeric( $data['authy_id'] ) ) {
       return (int) $data['authy_id'];
+    }
 
     return false;
   }
@@ -698,8 +706,9 @@ class Authy {
   protected function with_force_by_admin( $user_id ) {
     $data = $this->get_authy_data( $user_id);
 
-    if ($data['force_by_admin'] == 'true')
+    if ($data['force_by_admin'] == 'true') {
       return true;
+    }
 
     return false;
   }
@@ -722,10 +731,11 @@ class Authy {
       if ( wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' ) ) {
         // Email address
         $userdata = get_userdata( $user_id );
-        if ( is_object( $userdata ) && ! is_wp_error( $userdata ) )
+        if ( is_object( $userdata ) && ! is_wp_error( $userdata ) ) {
           $email = $userdata->data->user_email;
-        else
+        } else {
           $email = null;
+        }
 
         // Phone number
         $phone = preg_replace( '#[^\d]#', '', $authy_data['phone'] );
@@ -735,8 +745,9 @@ class Authy {
         $this->set_authy_data( $user_id, $email, $phone, $country_code );
       } elseif ( wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'disable_own' ) ) {
         // Delete Authy usermeta if requested
-        if ( isset( $authy_data['disable_own'] ) )
+        if ( isset( $authy_data['disable_own'] ) ) {
           $this->clear_authy_data( $user_id );
+        }
       }
     }
   }
@@ -939,10 +950,11 @@ class Authy {
                       exit;
 
                     } else {
-                      if ( isset($response->errors) )
+                      if ( isset($response->errors) ) {
                         $errors = get_object_vars($response->errors);
-                      else
+                      } else {
                         $errors = $response;
+                      }
                     }
                   } ?>
 
@@ -1018,19 +1030,30 @@ class Authy {
    * @param string $username
    * @return mixed
    */
-  public function action_request_sms($username, $force = false) {
+  public function action_request_sms($username, $force = false, $authy_id = '') {
     $user = get_user_by('login', $username);
-    $authy_id = $this->get_user_authy_id( $user->ID );
+
+    if ( empty($authy_id) ) {
+      $authy_id = $this->get_user_authy_id( $user->ID );
+    }
     $api_rsms = $this->api->request_sms( $authy_id, $force );
     return $api_rsms;
   }
 
   /**
    * Send SMS with Authy token via AJAX
-   * @return json
+   * @return string
    */
   public function request_sms_ajax() {
-    $response = $this->action_request_sms($_GET['username'], true);
+    $user = get_user_by('login', $_GET['username']);
+    $signature = get_user_meta($user->ID, $this->signature_key, true);
+    $data_temp = get_user_meta($user->ID, $this->authy_data_temp_key, true);
+
+    if ($signature['authy_signature'] === $_GET['signature']) {
+      $response = $this->action_request_sms($_GET['username'], true, $data_temp['authy_id']);
+    } else {
+      $response = _e('Error', 'authy');
+    }
     echo $response;
     die();
   }
@@ -1069,18 +1092,14 @@ class Authy {
   }
 
   /**
-   * AUTHENTICATION CHANGES
-   */
-
-  /**
-   * Add Two factor authentication page
+   * Render the Two factor authentication page
    *
    * @param mixed $user
    * @param string $redirect
    * @uses _e
    * @return string
    */
-  public function authy_token_page($user, $redirect) {
+  public function render_authy_token_page($user, $redirect) {
     $username = $user->user_login;
     $user_data = $this->get_authy_data( $user->ID );
     $user_signature = get_user_meta($user->ID, $this->signature_key, true);
@@ -1088,15 +1107,181 @@ class Authy {
   }
 
   /**
-  * Verify authy installation
+  * Render the verify authy installation page
+  *
   * @param mixed $user
+  * @param string $cellphone
+  * @param string $country_code
+  * @param string $errors
   * @return string
   */
-  public function verify_authy_installation($user, $errors = '') {
+  public function render_verify_authy_installation($user, $errors = '') {
     $user_data = $this->get_authy_data( $user->ID );
     $user_signature = get_user_meta($user->ID, $this->signature_key, true);
-    authy_installation_form($user, $user_data, $user_signature, $errors);
+    authy_installation_form($user, $user_data, $user_signature['authy_signature'], $errors);
   }
+
+  /**
+   * Login user with Authy Two Factor Authentication
+   *
+   * @param mixed $user
+   * @return mixed
+   */
+  public function login_with_2FA($user, $signature, $authy_token, $redirect_to) {
+    // Do 2FA if signature is valid.
+    if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $signature)) {
+      // invalidate signature
+      update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+
+      // Check the specified token
+      $authy_id = $this->get_user_authy_id( $user->ID );
+      $authy_token = preg_replace( '#[^\d]#', '', $authy_token );
+      $api_response = $this->api->check_token( $authy_id, $authy_token);
+
+      // Act on API response
+      if ( $api_response === true ) {
+        wp_set_auth_cookie($user->ID);
+        wp_safe_redirect($redirect_to);
+        exit(); // redirect without returning anything.
+      } elseif ( is_string( $api_response ) ) {
+        return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_response, 'authy') );
+      }
+    }
+    return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong> Authentication timed out. Please try again.', 'authy'));
+  }
+
+  /**
+   * Do password authentication and redirect to 2nd screen
+   *
+   * @param mixed $user
+   * @param string $username
+   * @param string $password
+   * @param string $redirect_to
+   * @return mixed
+   */
+  public function verify_password_and_redirect($user, $username, $password, $redirect_to) {
+    $userWP = get_user_by('login', $username);
+
+    // Don't bother if WP can't provide a user object.
+    if ( ! is_object( $userWP ) || ! property_exists( $userWP, 'ID' ) ) {
+      return $userWP;
+    }
+
+    if ( ! $this->user_has_authy_id( $userWP->ID ) && ! $this->with_force_by_admin($userWP->ID)) {
+      return $user; // wordpress will continue authentication.
+    }
+
+    // from here we take care of the authentication.
+    remove_action('authenticate', 'wp_authenticate_username_password', 20);
+
+    $ret = wp_authenticate_username_password($user, $username, $password);
+    if(is_wp_error($ret)) {
+      return $ret; // there was an error
+    }
+
+    $user = $ret;
+    $signature = $this->api->generate_signature();
+    update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $signature, "signed_at" => time()));
+
+    if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
+      enable_authy_page($userWP, $signature); // Show the enable authy page
+    } else {
+      $this->action_request_sms($username); // Send sms
+      $this->render_authy_token_page($user, $redirect_to); // Show the authy token page
+    }
+    exit();
+  }
+
+  /**
+   * Enable authy and go to verify installation page
+   *
+   * @param array $params
+   * @return mixed
+   */
+  public function enable_authy($params) {
+    $userWP = get_user_by('login', $params['username']);
+
+    $signature = get_user_meta($userWP->ID, $this->signature_key, true);
+    if ($signature['authy_signature'] != $params['signature']) {
+      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    }
+
+    // Request an Authy ID with given user information
+    $response = $this->api->register_user( $userWP->user_email, $params['cellphone'], $params['country_code']);
+
+    if ( $response->user && $response->user->id ) {
+      $authy_id = $response->user->id;
+
+      // Save the authy ID temporarily in db
+      $data_temp = array("authy_id" => $authy_id, 'cellphone' => $params['cellphone'], 'country_code' => $params['country_code']);
+      update_user_meta($userWP->ID, $this->authy_data_temp_key, $data_temp);
+      // Go to verify authy installation page
+      $this->render_verify_authy_installation($userWP);
+    } else {
+      $errors = array();
+      if ($response->errors) {
+        foreach ($response->errors as $attr => $message) {
+          if ($attr == 'country_code')
+            array_push($errors, 'Country code is invalid');
+          elseif ($attr != 'message')
+            array_push($errors, $attr . ' ' . $message);
+        }
+      }
+      enable_authy_page($userWP, $signature['authy_signature'], $errors);
+    }
+    exit();
+  }
+
+  /**
+   *
+   */
+  public function verify_authy_installation($params) {
+    $userWP = get_user_by('login', $params['username']);
+
+    $signature = get_user_meta($userWP->ID, $this->signature_key, true);
+    if ($signature['authy_signature'] != $params['signature']) {
+      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    }
+
+    if ( $this->user_has_authy_id($userWP->ID) || !$this->with_force_by_admin($userWP->ID)) {
+      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    }
+
+    // Get the temporal authy data
+    $data_temp = get_user_meta($userWP->ID, $this->authy_data_temp_key, true);
+    $authy_id = $data_temp['authy_id'];
+
+    // Check the specified token
+    $authy_token = preg_replace( '#[^\d]#', '', $params['authy_token'] );
+    $check_token_response = $this->api->check_token( $authy_id, $authy_token);
+
+    if ( $check_token_response === true ) {
+      // Save authy data of user on database
+      $this->set_authy_data(
+        $userWP->ID,
+        $userWP->user_email,
+        $data_temp['cellphone'],
+        $data_temp['country_code'], 'true',
+        $authy_id
+      );
+
+      delete_user_meta($userWP->ID, $this->authy_data_temp_key); // Delete temporal authy data
+
+      // invalidate signature
+      update_user_meta($userWP->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+      // Login user and redirect
+      wp_set_auth_cookie($userWP->ID);
+      wp_safe_redirect(admin_url());
+    } else{
+      // Show the errors
+      $this->render_verify_authy_installation($userWP, $check_token_response);
+      exit();
+    }
+  }
+
+  /**
+   * AUTHENTICATION CHANGES
+   */
 
   /**
   * @param mixed $user
@@ -1107,143 +1292,57 @@ class Authy {
   */
 
   public function authenticate_user($user="", $username="", $password="") {
-    // If the method isn't supported, stop:
-    if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
+    // If XMLRPC_REQUEST is disabled stop
+    if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) ) {
       return $user;
+    }
 
     if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] ) && empty($_POST['step']) ) {
       $user = get_user_by('login', $_POST['username']);
-
       // This line prevents WordPress from setting the authentication cookie and display errors.
       remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
-      // Do 2FA if signature is valid.
-      if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $_POST['authy_signature'])) {
-        // invalidate signature
-        update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
-
-        // Check the specified token
-        $authy_id = $this->get_user_authy_id( $user->ID );
-        $authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
-        $api_check = $this->api->check_token( $authy_id, $authy_token);
-
-        // Act on API response
-        if ( $api_check === true ) {
-          wp_set_auth_cookie($user->ID);
-          wp_safe_redirect($_POST['redirect_to']);
-          exit(); // redirect without returning anything.
-        } elseif ( is_string( $api_check ) ) {
-          return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_check ) );
-        }
+      $ret = $this->login_with_2FA($user, $_POST['authy_signature'], $_POST['authy_token'], $_POST['redirect_to']);
+      if(is_wp_error($ret)) {
+        return $ret; // there was an error
       }
-
-      return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong> Authentication timed out. Please try again.'));
     }
 
     // If have a username do password authentication and redirect to 2nd screen.
     if (! empty( $username )) {
-      $userWP = get_user_by('login', $username);
-
-      // Don't bother if WP can't provide a user object.
-      if ( ! is_object( $userWP ) || ! property_exists( $userWP, 'ID' ) )
-        return $userWP;
-
-      // User must opt in.
-      if ( ! $this->user_has_authy_id( $userWP->ID ) && ! $this->with_force_by_admin($userWP->ID))
-        return $user; // wordpress will continue authentication.
-
-      // from here we take care of the authentication.
-      remove_action('authenticate', 'wp_authenticate_username_password', 20);
-
-      $ret = wp_authenticate_username_password($user, $username, $password);
-      if(is_wp_error($ret)) {
-        // there was an error
+      $ret = $this->verify_password_and_redirect($user, $username, $password, $_POST['redirect_to']);
+      if( is_object( $ret ) || is_wp_error($ret)) {
         return $ret;
-      }
-
-      $user = $ret;
-
-      if (!is_wp_error($user)) {
-        $signature = $this->api->generate_signature();
-        update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $signature, "signed_at" => time()));
-
-        if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
-          // Show the enable authy page
-          enable_authy_page($userWP, $signature);
-        } else {
-          // Show the authy token page
-          $this->action_request_sms($username);
-          $this->authy_token_page($user, $_POST['redirect_to']);
-        }
-        exit();
       }
     }
 
     // if step is enable_authy and have country_code and phone show the enable authy page
     if ($_POST['step'] == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])  ) {
-      $userWP = get_user_by('login', $_POST['username']);
+      $params = array(
+        'username' => $_POST['username'],
+        'signature' => $_POST['authy_signature'],
+        'cellphone' => $_POST['authy_user']['cellphone'],
+        'country_code' => $_POST['authy_user']['country_code']
+      );
 
-      $signature = get_user_meta($userWP->ID, $this->signature_key, true);
-      if ($signature['authy_signature'] === $_POST['authy_signature']) {
-        // Request an Authy ID with given user information
-        $response = $this->api->register_user( $userWP->user_email, $_POST['authy_user']['cellphone'], $_POST['authy_user']['country_code']);
-
-        if ( $response->user && $response->user->id ) {
-          $authy_id = $response->user->id;
-
-          $this->set_authy_data(
-            $userWP->ID,
-            $userWP->user_email,
-            $_POST['authy_user']['cellphone'],
-            $_POST['authy_user']['country_code'],
-            'true',
-            $authy_id
-          );
-
-          // Go to verify authy installation page
-          $this->verify_authy_installation($userWP);
-        } else {
-          $errors = array();
-          if ($response->errors) {
-            foreach ($response->errors as $attr => $message) {
-              if ($attr == 'country_code')
-                array_push($errors, 'Country code is invalid');
-              elseif ($attr != 'message')
-                array_push($errors, $attr . ' ' . $message);
-            }
-          }
-          enable_authy_page($userWP, $signature, $errors);
-        }
-      } else {
-        enable_authy_page($userWP, $signature, array('Authy' => 'Authentication failed.'));
+      $ret = $this->enable_authy($params);
+      if(is_wp_error($ret)) {
+        return $ret; // there was an error
       }
-      exit();
     }
 
     // If step is verify_installation and have authy_token show the verify authy installation page.
     if ( $_POST['step'] == 'verify_installation' && isset($_POST['authy_token']) ) {
-      $userWP = get_user_by('login', $_POST['username']);
-      // Check the specified token
-      $authy_id = $this->get_user_authy_id( $userWP->ID );
-      $authy_token = preg_replace( '#[^\d]#', '', $_POST['authy_token'] );
-      $api_check = $this->api->check_token( $authy_id, $authy_token);
+      $params = array(
+        'username' => $_POST['username'],
+        'authy_token' => $_POST['authy_token'],
+        'signature' => $_POST['authy_signature']
+      );
 
-      if ( $api_check === true ) {
-        $signature = get_user_meta($userWP->ID, $this->signature_key, true);
-        if ($signature['authy_signature'] === $_POST['authy_signature']) {
-          // invalidate signature
-          update_user_meta($userWP->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
-          // Login user and redirect
-          wp_set_auth_cookie($userWP->ID);
-          wp_safe_redirect(admin_url());
-        } else {
-          $this->verify_authy_installation($userWP, 'Authentication failed.');
-        }
-      } else{
-        // Show the errors
-        $this->verify_authy_installation($userWP, $api_check);
+      $ret = $this->verify_authy_installation($params);
+      if(is_wp_error($ret)) {
+        return $ret; // there was an error
       }
-      exit();
     }
 
     return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
