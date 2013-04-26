@@ -133,7 +133,11 @@ class Authy {
 			if ( $this->get_setting('disable_xmlrpc') )
 				add_filter( 'xmlrpc_enabled', '__return_false' );
 
+			// Display notices
 			add_action( 'admin_notices', array( $this, 'action_admin_notices' ) );
+
+			// Request SMS
+			add_action( 'request_sms', array( $this, 'action_request_sms' ), 10, 1);
 		}
 	}
 
@@ -1078,7 +1082,8 @@ class Authy {
 	*/
 	public function verify_authy_installation($user, $errors = '') {
 		$user_data = $this->get_authy_data( $user->ID );
-		authy_installation_form($user, $user_data, $errors);
+		$user_signature = get_user_meta($user->ID, $this->signature_key, true);
+		authy_installation_form($user, $user_data, $user_signature, $errors);
 	}
 
 	/**
@@ -1094,7 +1099,7 @@ class Authy {
 		if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) )
 			return $user;
 
-		if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] )) {
+		if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] ) && empty($_POST['step']) ) {
 			$user = get_user_by('login', $_POST['username']);
 
 			// This line prevents WordPress from setting the authentication cookie and display errors.
@@ -1131,14 +1136,8 @@ class Authy {
 			if ( ! is_object( $userWP ) || ! property_exists( $userWP, 'ID' ) )
 				return $userWP;
 
-			// Show the enable authy page
-			if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
-				enable_authy_page($userWP);
-				exit();
-			}
-
 			// User must opt in.
-			if ( ! $this->user_has_authy_id( $userWP->ID ))
+			if ( ! $this->user_has_authy_id( $userWP->ID ) && ! $this->with_force_by_admin($userWP->ID))
 				return $user; // wordpress will continue authentication.
 
 			// from here we take care of the authentication.
@@ -1153,10 +1152,16 @@ class Authy {
 			$user = $ret;
 
 			if (!is_wp_error($user)) {
-				// with authy
 				update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
-				$this->action_request_sms($username);
-				$this->authy_token_page($user, $_POST['redirect_to']);
+
+				if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
+					// Show the enable authy page
+					enable_authy_page($userWP);
+				} else {
+					// Show the authy token page
+					$this->action_request_sms($username);
+					$this->authy_token_page($user, $_POST['redirect_to']);
+				}
 				exit();
 			}
 		}
@@ -1206,13 +1211,21 @@ class Authy {
 			$api_check = $this->api->check_token( $authy_id, $authy_token);
 
 			if ( $api_check === true ) {
-				wp_set_auth_cookie($userWP->ID);
-				wp_safe_redirect(admin_url());
+				$signature = get_user_meta($userWP->ID, $this->signature_key, true);
+				if ($signature['authy_signature'] === $_POST['authy_signature']) {
+					// invalidate signature
+					update_user_meta($userWP->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+					// Login user and redirect
+					wp_set_auth_cookie($userWP->ID);
+					wp_safe_redirect(admin_url());
+				} else {
+					$this->verify_authy_installation($userWP, 'Authentication failed.');
+				}
 			} else{
 				// Show the errors
 				$this->verify_authy_installation($userWP, $api_check);
 			}
-			exit(); // redirect without returning anything.
+			exit();
 		}
 
 		return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );

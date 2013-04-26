@@ -1,0 +1,37 @@
+#authy-verify {
+  color: #777;
+  font-size: 15px;
+  width: 657px;
+  padding: 114px 0 0;
+  margin: auto
+}
+#authy-verify h1 {
+  margin: 0 auto;
+}
+#authy-verify form {
+  padding: 50px;
+}
+#authy-verify #authy-token{
+  width: 226px;
+}
+#authy-verify p {
+  padding-bottom: 40px;
+}
+#authy-verify p .italic-text {
+  font-size: 14px;
+  font-style: italic;
+}
+#authy-verify .step {
+  padding-bottom: 70px;
+}
+#authy-verify .step .description-step {
+  width: 232px;
+  color: #777;
+  padding-right: 40px;
+  line-height: 20px;
+  float: left;
+}
+#authy-verify .step .description-step .number{
+  color: #00799a;
+  font-weight: bold;
+}
