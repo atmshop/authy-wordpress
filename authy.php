@@ -1164,11 +1164,12 @@ class Authy {
       $user = $ret;
 
       if (!is_wp_error($user)) {
-        update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => time()));
+        $signature = $this->api->generate_signature();
+        update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $signature, "signed_at" => time()));
 
         if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
           // Show the enable authy page
-          enable_authy_page($userWP);
+          enable_authy_page($userWP, $signature);
         } else {
           // Show the authy token page
           $this->action_request_sms($username);
@@ -1182,35 +1183,39 @@ class Authy {
     if ($_POST['step'] == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])  ) {
       $userWP = get_user_by('login', $_POST['username']);
 
-      // Request an Authy ID with given user information
-      $response = $this->api->register_user( $userWP->user_email, $_POST['authy_user']['cellphone'], $_POST['authy_user']['country_code']);
+      $signature = get_user_meta($userWP->ID, $this->signature_key, true);
+      if ($signature['authy_signature'] === $_POST['authy_signature']) {
+        // Request an Authy ID with given user information
+        $response = $this->api->register_user( $userWP->user_email, $_POST['authy_user']['cellphone'], $_POST['authy_user']['country_code']);
 
-      if ( $response->user && $response->user->id ) {
-        $authy_id = $response->user->id;
+        if ( $response->user && $response->user->id ) {
+          $authy_id = $response->user->id;
 
-        $this->set_authy_data(
-          $userWP->ID,
-          $userWP->user_email,
-          $_POST['authy_user']['cellphone'],
-          $_POST['authy_user']['country_code'],
-          'true',
-          $authy_id
-        );
+          $this->set_authy_data(
+            $userWP->ID,
+            $userWP->user_email,
+            $_POST['authy_user']['cellphone'],
+            $_POST['authy_user']['country_code'],
+            'true',
+            $authy_id
+          );
 
-        // Go to verify authy installation page
-        $this->verify_authy_installation($userWP);
-        $this->action_request_sms($userWP->user_login);
-      } else {
-        $errors = array();
-        if ($response->errors) {
-          foreach ($response->errors as $attr => $message) {
-            if ($attr == 'country_code')
-              array_push($errors, 'Country code is invalid');
-            elseif ($attr != 'message')
-              array_push($errors, $attr . ' ' . $message);
+          // Go to verify authy installation page
+          $this->verify_authy_installation($userWP);
+        } else {
+          $errors = array();
+          if ($response->errors) {
+            foreach ($response->errors as $attr => $message) {
+              if ($attr == 'country_code')
+                array_push($errors, 'Country code is invalid');
+              elseif ($attr != 'message')
+                array_push($errors, $attr . ' ' . $message);
+            }
           }
+          enable_authy_page($userWP, $signature, $errors);
         }
-        enable_authy_page($userWP, $errors);
+      } else {
+        enable_authy_page($userWP, $signature, array('Authy' => 'Authentication failed.'));
       }
       exit();
     }

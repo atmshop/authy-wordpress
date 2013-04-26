@@ -80,7 +80,7 @@ function authy_token_form($username, $user_data, $user_signature, $redirect) {
 * @param mixed $user
 * @return string
 */
-function enable_authy_page($user, $errors = array()) {
+function enable_authy_page($user, $signature, $errors = array()) {
   ?>
   <html>
     <?php echo authy_header(); ?>
@@ -106,6 +106,8 @@ function enable_authy_page($user, $errors = array()) {
           <input type="tel" name="authy_user[cellphone]" id="authy-cellphone" class="input" />
           <input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
           <input type="hidden" name="step" value="enable_authy"/>
+          <input type="hidden" name="authy_signature" value="<?php echo esc_attr($signature); ?>"/>
+
           <p class="submit">
             <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
           </p>

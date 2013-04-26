@@ -146,7 +146,7 @@ class Authy_API {
     $body = get_object_vars(json_decode($body));
 
     if ( $status_code == 200 )
-      return __( 'SMS token was sent.', 'authy' );
+      return __( 'SMS token was sent. Please allow at least 1 minute for the text to arrive.', 'authy' );
 
     return __( $body['message'], 'authy' );
   }
