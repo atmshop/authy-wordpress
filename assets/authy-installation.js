@@ -1,5 +1,5 @@
 jQuery(document).ready(function($) {
-  $("#request-sms-link").on( 'click', function( ev ) {
+  $(".request-sms-link").on( 'click', function( ev ) {
     ev.preventDefault();
     $.ajax({
       url:  AuthyAjax.ajaxurl,

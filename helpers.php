@@ -174,13 +174,18 @@ function authy_installation_form($user, $user_data, $user_signature, $errors) {
     <body class='login wp-core-ui'>
       <div id="authy-verify">
         <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo('name'); ?></a></h1>
+        <?php
+          if ( !empty($errors) ) { ?>
+            <div id="login_error"><strong><?php echo __('ERROR: ', 'authy'); ?></strong><?php echo __($errors, 'authy'); ?></div><?php
+          }
+        ?>
         <form method="POST" id="authy" action="wp-login.php">
           <p><?php echo _e('To activate your account you need to setup Authy Two-Factor Authentication.', 'authy'); ?></p>
 
           <div class='step'>
             <div class='description-step'>
               <span class='number'>1.</span>
-              <span>On your phone browser go to <a href="https://www.authy.com/install" alt="install authy">https://www.authy.com/install</a></span>
+              <span>On your phone browser go to <a href="https://www.authy.com/install" alt="install authy" style="padding-left: 18px;">https://www.authy.com/install</a></span>
             </div>
             <img src="<?php echo plugins_url('/assets/images/step1-image.png', __FILE__); ?>" alt='installation' />
           </div>
@@ -190,26 +195,35 @@ function authy_installation_form($user, $user_data, $user_signature, $errors) {
               <span class='number'>2.</span>
               <span>Open the App and register.</span>
             </div>
-            <img src="<?php echo plugins_url('/assets/images/step2-image.png', __FILE__); ?>" alt='installation' style='padding-left: 22px;' />
+            <img src="<?php echo plugins_url('/assets/images/step2-image.png', __FILE__); ?>" alt='smartphones' style='padding-left: 22px;' />
           </div>
 
-          <p class='italic-text'><?php echo _e('If you don’t have an iPhone or Android click here to get the Token as a Text Message.', 'authy'); ?></p>
+          <p class='italic-text'>
+            <?php echo _e('If you don’t have an iPhone or Android ', 'authy'); ?>
+            <a href="#" class="request-sms-link"><?php echo _e('click here to get the Token as a Text Message.', 'authy'); ?></a>
+          </p>
 
-          <label for="authy_token"><?php _e( 'Authy token', 'authy' ); ?></label>
-          <input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
+          <label for="authy_token">
+            <?php _e( 'Authy Token', 'authy' ); ?>
+            <br>
+            <input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
+          </label>
           <input type="hidden" name="username" value="<?php echo esc_attr($user->user_login); ?>"/>
           <input type="hidden" name="step" value="verify_installation"/>
           <?php if(isset($user_signature['authy_signature']) && isset($user_signature['signed_at']) ) { ?>
             <input type="hidden" name="authy_signature" value="<?php echo esc_attr($user_signature['authy_signature']); ?>"/>
           <?php } ?>
 
-          <p class="submit">
-            <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
-          </p>
+          <input type="submit" value="<?php echo _e('Verify Token', 'authy') ?>" id="wp_submit" class="button button-primary">
+          <div class="rsms">
+            <img src="<?php echo plugins_url('/assets/images/phone-icon.png', __FILE__); ?>" alt="cellphone">
+            <a href="#" class='request-sms-link' data-username="<?php echo $user->user_login;?>">
+              <?php echo _e('Get the token via SMS', 'authy'); ?>
+            </a>
+          </div>
         </form>
-        <a href="#" id='request-sms-link' data-username="<?php echo $user->user_login;?>"><?php echo _e('Request SMS', 'authy'); ?></a>
       </div>
-      </body>
-    </html>
+    </body>
+  </html>
   <?php
 }
