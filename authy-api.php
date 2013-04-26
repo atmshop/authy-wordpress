@@ -133,13 +133,17 @@ class Authy_API {
 	public function request_sms($id) {
 		$endpoint = sprintf( '%s/protected/json/sms/%d', $this->api_endpoint, $id );
 		$endpoint = add_query_arg( array('api_key' => $this->api_key), $endpoint);
-		$response = wp_remote_head($endpoint);
+
+		$response = wp_remote_get($endpoint);
 		$status_code = wp_remote_retrieve_response_code($response);
 
-		if ( $status_code == 200)
-			return true;
+		$body = wp_remote_retrieve_body($response);
+		$body = get_object_vars(json_decode($body));
 
-		return false;
+		if ( $status_code == 200 )
+			return __( 'SMS token was sent.', 'authy' );
+
+		return __( $body['message'], 'authy' );
 	}
 
   /**

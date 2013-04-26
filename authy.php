@@ -136,8 +136,9 @@ class Authy {
 			// Display notices
 			add_action( 'admin_notices', array( $this, 'action_admin_notices' ) );
 
-			// Request SMS
-			add_action( 'request_sms', array( $this, 'action_request_sms' ), 10, 1);
+			// Enable the user with no privileges to run action_request_sms() in AJAX
+      add_action( 'wp_ajax_nopriv_request_sms_ajax', array( $this, 'request_sms_ajax') );
+      add_action( 'wp_ajax_request_sms_ajax', array( $this, 'request_sms_ajax'));
 		}
 	}
 
@@ -1015,12 +1016,22 @@ class Authy {
 	/**
 	 * Send SMS with Authy token
 	 * @param string $username
-	 * @return null
+	 * @return mixed
 	 */
 	public function action_request_sms($username) {
 		$user = get_user_by('login', $username);
 		$authy_id = $this->get_user_authy_id( $user->ID );
 		$api_rsms = $this->api->request_sms( $authy_id);
+		return $api_rsms;
+	}
+
+	/**
+   * Send SMS with Authy token via AJAX
+	 * @return json
+	 */
+	public function request_sms_ajax() {
+		$response = $this->action_request_sms($_GET['username']);
+		echo json_encode($response);
 	}
 
 	/**
@@ -1187,6 +1198,7 @@ class Authy {
 
 				// Go to verify authy installation page
 				$this->verify_authy_installation($userWP);
+				$this->action_request_sms($userWP->user_login);
 			} else {
 				$errors = array();
 				if ($response->errors) {

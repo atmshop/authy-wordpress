@@ -24,6 +24,11 @@ function authy_header($step = '') {
     <?php
       if ( $step == 'verify_installation' ) { ?>
         <link href="<?php echo plugins_url( 'assets/authy.css', __FILE__ ); ?>" media="screen" rel="stylesheet" type="text/css">
+        <script type="text/javascript">
+        /* <![CDATA[ */
+        var AuthyAjax = {"ajaxurl":"<?php echo admin_url('admin-ajax.php'); ?>"};
+        /* ]]> */
+        </script>
         <script src="<?php echo admin_url( 'load-scripts.php?c=1&load=jquery,utils'); ?>" type="text/javascript"></script>
         <script src="<?php echo plugins_url( 'assets/authy-installation.js', __FILE__ ); ?>" type="text/javascript"></script><?php
       }
@@ -202,7 +207,7 @@ function authy_installation_form($user, $user_data, $user_signature, $errors) {
             <input type="submit" value="<?php echo _e('Enable', 'authy') ?>" id="wp_submit" class="button button-primary button-large">
           </p>
         </form>
-        <a href="wp-login.php?step=verify_installation&request-sms=true&username=<?php echo esc_attr($user->user_login); ?>" id="request-sms-link"><?php echo _e('Request SMS', 'authy'); ?></a>
+        <a href="#" id='request-sms-link' data-username="<?php echo $user->user_login;?>"><?php echo _e('Request SMS', 'authy'); ?></a>
       </div>
       </body>
     </html>
