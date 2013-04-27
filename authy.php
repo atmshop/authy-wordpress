@@ -1297,27 +1297,22 @@ class Authy {
       return $user;
     }
 
-    if (isset($_POST['authy_signature']) && isset( $_POST['authy_token'] ) && empty($_POST['step']) ) {
+    $ret = null;
+    $step = $_POST['step'];
+
+    if (! empty( $username )) {
+      $ret = $this->verify_password_and_redirect($user, $username, $password, $_POST['redirect_to']);
+    }
+    elseif (empty($step) && isset($_POST['authy_signature']) && isset( $_POST['authy_token'] ) )
+    {
       $user = get_user_by('login', $_POST['username']);
       // This line prevents WordPress from setting the authentication cookie and display errors.
       remove_action('authenticate', 'wp_authenticate_username_password', 20);
 
       $ret = $this->login_with_2FA($user, $_POST['authy_signature'], $_POST['authy_token'], $_POST['redirect_to']);
-      if(is_wp_error($ret)) {
-        return $ret; // there was an error
-      }
     }
-
-    // If have a username do password authentication and redirect to 2nd screen.
-    if (! empty( $username )) {
-      $ret = $this->verify_password_and_redirect($user, $username, $password, $_POST['redirect_to']);
-      if( is_object( $ret ) || is_wp_error($ret)) {
-        return $ret;
-      }
-    }
-
-    // if step is enable_authy and have country_code and phone show the enable authy page
-    if ($_POST['step'] == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])  ) {
+    elseif ($step == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])  )
+    { // if step is enable_authy and have country_code and phone show the enable authy page
       $params = array(
         'username' => $_POST['username'],
         'signature' => $_POST['authy_signature'],
@@ -1326,13 +1321,9 @@ class Authy {
       );
 
       $ret = $this->enable_authy($params);
-      if(is_wp_error($ret)) {
-        return $ret; // there was an error
-      }
     }
-
-    // If step is verify_installation and have authy_token show the verify authy installation page.
-    if ( $_POST['step'] == 'verify_installation' && isset($_POST['authy_token']) ) {
+    elseif ( $step == 'verify_installation' && isset($_POST['authy_token']) )
+    { // If step is verify_installation and have authy_token show the verify authy installation page.
       $params = array(
         'username' => $_POST['username'],
         'authy_token' => $_POST['authy_token'],
@@ -1340,9 +1331,10 @@ class Authy {
       );
 
       $ret = $this->verify_authy_installation($params);
-      if(is_wp_error($ret)) {
-        return $ret; // there was an error
-      }
+    }
+
+    if ( is_wp_error($ret) || is_object( $ret )) {
+      return $ret;
     }
 
     return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
