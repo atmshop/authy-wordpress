@@ -205,7 +205,7 @@ class Authy {
      */
     public function action_admin_init() {
         register_setting( $this->settings_page, $this->settings_key, array( $this, 'validate_plugin_settings' ) );
-        register_setting( $this->settings_page, 'authy_roles', array( $this, 'roles_validate' ) );
+        register_setting( $this->settings_page, 'authy_roles', array( $this, 'select_only_system_roles' ) );
     }
 
     /**
@@ -1325,4 +1325,3 @@ class Authy {
 }
 
 Authy::instance();
-

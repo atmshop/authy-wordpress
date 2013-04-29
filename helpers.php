@@ -31,9 +31,8 @@ function authy_header( $step = '' ) { ?>
         <script src="<?php echo plugins_url( 'assets/authy-installation.js', __FILE__ ); ?>" type="text/javascript"></script>
     <?php } ?>
   </head>
-<?php } ?>
+<?php }
 
-<?php
 /**
  * Generate the authy token form
  * @param string $username
@@ -74,9 +73,8 @@ function authy_token_form( $username, $user_data, $user_signature, $redirect ) {
       </div>
     </body>
   </html>
-<?php } ?>
+<?php }
 
-<?php
 /**
 * Enable authy page
 *
@@ -117,9 +115,8 @@ function render_enable_authy_page( $user, $signature, $errors = array() ) {?>
       </div>
     </body>
   </html>
-<?php } ?>
+<?php }
 
-<?php
 /**
  * Form enable authy on profile
  * @param string $users_key
@@ -143,9 +140,8 @@ function register_form_on_profile( $users_key, $user_data ) {?>
       </td>
     </tr>
   </table>
-<?php } ?>
+<?php }
 
-<?php
 /**
  * Form disable authy on profile
  * @return string
@@ -162,9 +158,8 @@ function disable_form_on_profile( $users_key ) {?>
       </td>
     </tr>
   </table>
-<?php } ?>
+<?php }
 
-<?php
 /**
  * Form verify authy installation
  * @return string
@@ -227,9 +222,8 @@ function authy_installation_form( $user, $user_data, $user_signature, $errors ) 
       </div>
     </body>
   </html>
-<?php } ?>
+<?php }
 
-<?php
 /**
  *
  */
@@ -258,4 +252,3 @@ function register_form_with_js( $users_key, $authy_data ) {?>
 <?php }
 
 // closing the last tag is not recommended: http://php.net/basic-syntax.instruction-separation
-
