@@ -2,8 +2,7 @@
 /**
 * Header for authy pages
 */
-function authy_header( $step = '' ) {
-  ?>
+function authy_header( $step = '' ) { ?>
   <head>
     <?php
       global $wp_version;
@@ -21,8 +20,7 @@ function authy_header( $step = '' ) {
     ?>
     <link href="https://www.authy.com/form.authy.min.css" media="screen" rel="stylesheet" type="text/css">
     <script src="https://www.authy.com/form.authy.min.js" type="text/javascript"></script>
-    <?php
-      if ( $step == 'verify_installation' ) { ?>
+    <?php if ( $step == 'verify_installation' ) { ?>
         <link href="<?php echo plugins_url( 'assets/authy.css', __FILE__ ); ?>" media="screen" rel="stylesheet" type="text/css">
         <script type="text/javascript">
         /* <![CDATA[ */
@@ -30,14 +28,12 @@ function authy_header( $step = '' ) {
         /* ]]> */
         </script>
         <script src="<?php echo admin_url( 'load-scripts.php?c=1&load=jquery,utils' ); ?>" type="text/javascript"></script>
-        <script src="<?php echo plugins_url( 'assets/authy-installation.js', __FILE__ ); ?>" type="text/javascript"></script><?php
-      }
-    ?>
+        <script src="<?php echo plugins_url( 'assets/authy-installation.js', __FILE__ ); ?>" type="text/javascript"></script>
+    <?php } ?>
   </head>
-  <?php
-}
+<?php } ?>
 
-
+<?php
 /**
  * Generate the authy token form
  * @param string $username
@@ -46,42 +42,48 @@ function authy_header( $step = '' ) {
  * @return string
  */
 
-function authy_token_form( $username, $user_data, $user_signature, $redirect ) {
-  ?>
+function authy_token_form( $username, $user_data, $user_signature, $redirect ) {?>
   <html>
     <?php echo authy_header(); ?>
     <body class='login wp-core-ui'>
       <div id="login">
-        <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo( 'name' ); ?></a></h1>
+        <h1>
+          <a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo( 'name' ); ?></a>
+        </h1>
         <h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
-        <p class="message"><?php _e( "You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically sent you a token via text-message to cellphone number: ", 'authy' ); ?><strong><?php echo esc_attr( $user_data['phone'] ); ?></strong></p>
+        <p class="message">
+          <?php _e( "You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically sent you a token via text-message to cellphone number: ", 'authy' ); ?>
+          <strong><?php echo esc_attr( $user_data['phone'] ); ?></strong>
+        </p>
 
         <form method="POST" id="authy" action="wp-login.php">
-          <label for="authy_token"><?php _e( 'Authy Token', 'authy' ); ?><br>
-          <input type="text" name="authy_token" id="authy-token" class="input" value="" size="20"></label>
+          <label for="authy_token">
+            <?php _e( 'Authy Token', 'authy' ); ?>
+            <br>
+            <input type="text" name="authy_token" id="authy-token" class="input" value="" size="20" />
+          </label>
           <input type="hidden" name="redirect_to" value="<?php echo esc_attr( $redirect ); ?>"/>
           <input type="hidden" name="username" value="<?php echo esc_attr( $username ); ?>"/>
           <?php if ( isset( $user_signature['authy_signature'] ) && isset( $user_signature['signed_at'] ) ) { ?>
             <input type="hidden" name="authy_signature" value="<?php echo esc_attr( $user_signature['authy_signature'] ); ?>"/>
           <?php } ?>
           <p class="submit">
-            <input type="submit" value="<?php echo esc_attr_e( 'Login', 'authy' ) ?>" id="wp_submit" class="button button-primary button-large">
+            <input type="submit" value="<?php echo esc_attr_e( 'Login', 'authy' ) ?>" id="wp_submit" class="button button-primary button-large" />
           </p>
         </form>
       </div>
     </body>
   </html>
-  <?php
-}
+<?php } ?>
 
+<?php
 /**
 * Enable authy page
 *
 * @param mixed $user
 * @return string
 */
-function enable_authy_page( $user, $signature, $errors = array() ) {
-  ?>
+function render_enable_authy_page( $user, $signature, $errors = array() ) {?>
   <html>
     <?php echo authy_header(); ?>
     <body class='login wp-core-ui'>
@@ -115,17 +117,16 @@ function enable_authy_page( $user, $signature, $errors = array() ) {
       </div>
     </body>
   </html>
-  <?php
-}
+<?php } ?>
 
+<?php
 /**
  * Form enable authy on profile
  * @param string $users_key
  * @param array $user_datas
  * @return string
  */
-function register_form_on_profile( $users_key, $user_data ) {
-  ?>
+function register_form_on_profile( $users_key, $user_data ) {?>
   <table class="form-table" id="<?php echo esc_attr( $users_key ); ?>">
     <tr>
       <th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
@@ -142,15 +143,14 @@ function register_form_on_profile( $users_key, $user_data ) {
       </td>
     </tr>
   </table>
-  <?php
-}
+<?php } ?>
 
+<?php
 /**
  * Form disable authy on profile
  * @return string
  */
-function disable_form_on_profile( $users_key ) {
-  ?>
+function disable_form_on_profile( $users_key ) {?>
   <table class="form-table" id="<?php echo esc_attr( $users_key ); ?>">
     <tr>
       <th><label for="<?php echo esc_attr( $users_key ); ?>_disable"><?php _e( 'Disable Two Factor Authentication?', 'authy' ); ?></label></th>
@@ -162,25 +162,22 @@ function disable_form_on_profile( $users_key ) {
       </td>
     </tr>
   </table>
-  <?php
-}
+<?php } ?>
 
+<?php
 /**
  * Form verify authy installation
  * @return string
  */
-function authy_installation_form( $user, $user_data, $user_signature, $errors ) {
-  ?>
+function authy_installation_form( $user, $user_data, $user_signature, $errors ) {?>
   <html>
     <?php echo authy_header( 'verify_installation' ); ?>
     <body class='login wp-core-ui'>
       <div id="authy-verify">
         <h1><a href="http://wordpress.org/" title="Powered by WordPress"><?php echo get_bloginfo( 'name' ); ?></a></h1>
-        <?php
-          if ( !empty( $errors ) ) { ?>
-            <div id="login_error"><strong><?php echo esc_attr_e( 'ERROR: ', 'authy' ); ?></strong><?php echo esc_attr_e( $errors, 'authy' ); ?></div><?php
-          }
-        ?>
+        <?php if ( !empty( $errors ) ) {?>
+            <div id="login_error"><strong><?php echo esc_attr_e( 'ERROR: ', 'authy' ); ?></strong><?php echo esc_attr_e( $errors, 'authy' ); ?></div>
+        <?php } ?>
         <form method="POST" id="authy" action="wp-login.php">
           <p><?php echo esc_attr_e( 'To activate your account you need to setup Authy Two-Factor Authentication.', 'authy' ); ?></p>
 
@@ -230,14 +227,13 @@ function authy_installation_form( $user, $user_data, $user_signature, $errors ) 
       </div>
     </body>
   </html>
-  <?php
-}
+<?php } ?>
 
+<?php
 /**
  *
  */
-function register_form_with_js( $users_key, $authy_data ) {
-  ?>
+function register_form_with_js( $users_key, $authy_data ) {?>
   <table class="form-table" id="<?php echo esc_attr( $users_key ); ?>-ajax">
     <tr>
       <th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
@@ -259,5 +255,7 @@ function register_form_with_js( $users_key, $authy_data ) {
   <p class="submit">
     <input name="Continue" type="submit" value="<?php esc_attr_e( 'Continue' );?>" class="button-primary">
   </p>
-  <?php
-}
+<?php }
+
+// closing the last tag is not recommended: http://php.net/basic-syntax.instruction-separation
+
