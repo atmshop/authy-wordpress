@@ -37,7 +37,7 @@ class Authy {
     protected $name = 'Authy Two-Factor Authentication';
 
     // Parsed settings
-    private $_settings = null;
+    private $settings = null;
 
     // Is API ready, should plugin act?
     protected $ready = false;
@@ -100,7 +100,7 @@ class Authy {
     /**************************************************
      * START WORDPRESS METHODS
      **************************************************/
- 
+
     /**
      * Plugin setup
      *
@@ -288,17 +288,17 @@ class Authy {
     public function get_setting( $key ) {
         $value = false;
 
-        if ( is_null( $this->_settings ) || ! is_array( $this->_settings ) ) {
-            $this->_settings = get_option( $this->_settings_key );
-            $this->_settings = wp_parse_args( $this->_settings, array(
+        if ( is_null( $this->settings ) || ! is_array( $this->settings ) ) {
+            $this->settings = get_option( $this->settings_key );
+            $this->settings = wp_parse_args( $this->settings, array(
                 'api_key_production'  => '',
                 'environment'         => apply_filters( 'authy_environment', 'production' ),
                 'disable_xmlrpc'      => false,
             ) );
         }
 
-        if ( isset( $this->_settings[ $key ] ) ) {
-            $value = $this->_settings[ $key ];
+        if ( isset( $this->settings[ $key ] ) ) {
+            $value = $this->settings[ $key ];
         }
 
         return $value;
@@ -1096,7 +1096,7 @@ class Authy {
         authy_installation_form( $user, $user_data, $user_signature['authy_signature'], $errors );
     }
 
-    
+
     /**
      * Do password authentication and redirect to 2nd screen
      *
