@@ -65,7 +65,7 @@ class Authy {
     'type'     => 'text',
     'sanitizer' => 'sanitize_text_field',
     'section'  => 'default',
-    'class'    => null
+    'class'    => null,
   );
 
   // Default Authy data
@@ -74,7 +74,7 @@ class Authy {
     'phone'        => null,
     'country_code' => '+1',
     'authy_id'     => null,
-    'force_by_admin' => 'false'
+    'force_by_admin' => 'false',
   );
 
   /**
@@ -125,13 +125,13 @@ class Authy {
 
       add_action( 'personal_options_update', array( $this, 'action_personal_options_update' ) );
       add_action( 'edit_user_profile_update', array( $this, 'action_edit_user_profile_update' ) );
-      add_filter( 'user_profile_update_errors', array( $this, 'check_user_fields' ), 10, 3);
+      add_filter( 'user_profile_update_errors', array( $this, 'check_user_fields' ), 10, 3 );
 
       // Authentication
-      add_filter( 'authenticate', array( $this, 'authenticate_user'), 10, 3);
+      add_filter( 'authenticate', array( $this, 'authenticate_user' ), 10, 3 );
 
       // Disable XML-RPC
-      if ( $this->get_setting('disable_xmlrpc') ) {
+      if ( $this->get_setting( 'disable_xmlrpc' ) ) {
         add_filter( 'xmlrpc_enabled', '__return_false' );
       }
 
@@ -139,8 +139,8 @@ class Authy {
       add_action( 'admin_notices', array( $this, 'action_admin_notices' ) );
 
       // Enable the user with no privileges to run action_request_sms() in AJAX
-      add_action( 'wp_ajax_nopriv_request_sms_ajax', array( $this, 'request_sms_ajax') );
-      add_action( 'wp_ajax_request_sms_ajax', array( $this, 'request_sms_ajax'));
+      add_action( 'wp_ajax_nopriv_request_sms_ajax', array( $this, 'request_sms_ajax' ) );
+      add_action( 'wp_ajax_request_sms_ajax', array( $this, 'request_sms_ajax' ) );
     }
   }
 
@@ -156,14 +156,14 @@ class Authy {
         'name'      => 'api_key_production',
         'label'     => __( 'Authy Production API Key', 'authy' ),
         'type'      => 'text',
-        'sanitizer' => 'alphanumeric'
+        'sanitizer' => 'alphanumeric',
       ),
       array(
         'name'      => 'disable_xmlrpc',
         'label'     => __( "Disable external apps that don't support Two-factor Authentication", 'authy_wp' ),
         'type'      => 'checkbox',
-        'sanitizer' => null
-      )
+        'sanitizer' => null,
+      ),
     );
   }
 
@@ -175,10 +175,10 @@ class Authy {
    */
   protected function prepare_api() {
     $endpoints = array(
-      'production'  => 'https://api.authy.com'
+      'production'  => 'https://api.authy.com',
     );
 
-    $api_key = $this->get_setting( 'api_key_production');
+    $api_key = $this->get_setting( 'api_key_production' );
 
     // Only prepare the API endpoint if we have all information needed.
     if ( $api_key && isset( $endpoints['production'] ) ) {
@@ -205,7 +205,7 @@ class Authy {
    */
   public function action_admin_init() {
     register_setting( $this->settings_page, $this->settings_key, array( $this, 'validate_plugin_settings' ) );
-    register_setting( $this->settings_page, 'authy_roles', array($this, 'roles_validate'));
+    register_setting( $this->settings_page, 'authy_roles', array( $this, 'roles_validate' ) );
   }
 
   /**
@@ -234,19 +234,19 @@ class Authy {
 
     global $current_screen;
 
-    if ( $current_screen->base == 'profile') {
+    if ( $current_screen->base == 'profile' ) {
       wp_enqueue_script( 'authy-profile', plugins_url( 'assets/authy-profile.js', __FILE__ ), array( 'jquery', 'thickbox' ), 1.01, true );
-      wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
+      wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true );
       wp_localize_script( 'authy-profile', 'Authy', array(
         'ajax' => $this->get_ajax_url(),
         'th_text' => __( 'Two-Factor Authentication', 'authy' ),
-        'button_text' => __( 'Enable/Disable Authy', 'authy' )
+        'button_text' => __( 'Enable/Disable Authy', 'authy' ),
       ) );
 
       wp_enqueue_style( 'thickbox' );
       wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
     } elseif ( $current_screen->base == 'user-edit' ) {
-      wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true);
+      wp_enqueue_script( 'form-authy-js', 'https://www.authy.com/form.authy.min.js', array(), false, true );
       wp_enqueue_style( 'form-authy-css', 'https://www.authy.com/form.authy.min.css', array(), false, 'screen' );
     }
   }
@@ -273,8 +273,8 @@ class Authy {
   */
   public function action_admin_notices() {
     $response = $this->api->curl_ca_certificates();
-    if ( is_string($response) ) {
-      ?><div id="message" class="error"><p><strong>Error:</strong><?php echo $response; ?></p></div><?php
+    if ( is_string( $response ) ) {
+      ?><div id="message" class="error"><p><strong>Error:</strong><?php echo esc_attr( $response ); ?></p></div><?php
     }
   }
 
@@ -293,7 +293,7 @@ class Authy {
       $this->settings = wp_parse_args( $this->settings, array(
         'api_key_production'  => '',
         'environment'         => apply_filters( 'authy_environment', 'production' ),
-        'disable_xmlrpc'      => false
+        'disable_xmlrpc'      => false,
       ) );
     }
 
@@ -324,16 +324,16 @@ class Authy {
   * @return boolean
   *
   */
-  public function available_authy_for_role($user) {
+  public function available_authy_for_role( $user ) {
     global $wp_roles;
     $available_authy = false;
 
     $listRoles = $wp_roles->get_names();
 
-    $authy_roles = get_option('authy_roles', $listRoles);
+    $authy_roles = get_option( 'authy_roles', $listRoles );
 
-    foreach ($user->roles as $role) {
-      if (array_key_exists($role, $authy_roles)) {
+    foreach ( $user->roles as $role ) {
+      if ( array_key_exists( $role, $authy_roles ) ) {
         $available_authy = true;
       }
     }
@@ -351,9 +351,9 @@ class Authy {
    * @return null
    */
   public function register_settings_page_sections() {
-    add_settings_field('api_key_production', __('Authy Production API Key', 'authy'), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default');
-    add_settings_field('authy_roles', __('Allow Authy for the following roles', 'authy'), array( $this, 'add_settings_roles' ), $this->settings_page, 'default');
-    add_settings_field('disable_xmlrpc', __("Disable external apps that don't support Two-factor Authentication", 'authy'), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default');
+    add_settings_field( 'api_key_production', __( 'Authy Production API Key', 'authy' ), array( $this, 'add_settings_api_key' ), $this->settings_page, 'default' );
+    add_settings_field( 'authy_roles', __( 'Allow Authy for the following roles', 'authy' ), array( $this, 'add_settings_roles' ), $this->settings_page, 'default' );
+    add_settings_field( 'disable_xmlrpc', __( "Disable external apps that don't support Two-factor Authentication", 'authy' ), array( $this, 'add_settings_disbale_xmlrpc' ), $this->settings_page, 'default' );
   }
 
   /**
@@ -363,9 +363,10 @@ class Authy {
    * @return string
    */
   public function add_settings_api_key() {
-    $value = $this->get_setting( 'api_key_production' );
+    $value = $this->get_setting( 'api_key_production' ); ?>
 
-    ?><input type="text" name="<?php echo esc_attr( $this->settings_key ); ?>[api_key_production]" class="regular-text" id="field-api_key_production" value="<?php echo esc_attr( $value ); ?>" /><?php
+    <input type="text" name="<?php echo esc_attr( $this->settings_key ); ?>[api_key_production]"
+      class="regular-text" id="field-api_key_production" value="<?php echo esc_attr( $value ); ?>" /><?php
   }
 
   /**
@@ -379,16 +380,18 @@ class Authy {
     $roles = $wp_roles->get_names();
     $listRoles = array();
 
-    foreach($roles as $key=>$role) {
-      $listRoles[before_last_bar($key)] = before_last_bar($role);
+    foreach ( $roles as $key => $role ) {
+      $listRoles[before_last_bar( $key )] = before_last_bar( $role );
     }
 
-    $selected = get_option('authy_roles', $listRoles);
+    $selected = get_option( 'authy_roles', $listRoles );
 
-    foreach ($wp_roles->get_names() as $role) {
-      ?>
-      <input name='authy_roles[<?php echo strtolower(before_last_bar($role)); ?>]' type='checkbox' value='<?php echo before_last_bar($role); ?>'<?php if(in_array(before_last_bar($role), $selected)) echo 'checked="checked"'; ?> /> <?php echo before_last_bar($role); ?></br>
-      <?php
+    foreach ( $wp_roles->get_names() as $role ) {
+      $checked = in_array( before_last_bar( $role ), $selected );
+      $role_name = before_last_bar( $role ); ?>
+
+      <input name='authy_roles[<?php echo esc_attr( strtolower( $role_name ) ); ?>]' type='checkbox'
+        value='<?php echo esc_attr( $role_name ); ?>'<?php if ( $checked ) echo 'checked="checked"'; ?> /><?php echo esc_attr( $role_name ); ?></br><?php
     }
   }
 
@@ -401,10 +404,10 @@ class Authy {
     $value = $this->get_setting( 'disable_xmlrpc' );
     ?>
     <label for='<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]'>
-      <input name="<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]" type="checkbox" value="true" <?php if($value) echo 'checked="checked"'; ?> >
-      <span style='color: #bc0b0b;'><?php _e("Ensure Two-factor authentication is always respected." , 'authy')?></span>
+      <input name="<?php echo esc_attr( $this->settings_key ); ?>[disable_xmlrpc]" type="checkbox" value="true" <?php if ($value) echo 'checked="checked"'; ?> >
+      <span style='color: #bc0b0b;'><?php _e( 'Ensure Two-factor authentication is always respected.' , 'authy' )?></span>
     </label>
-    <p class ='description'><?php _e("WordPress mobile app's don't support Two-Factor authentication. If you disable this option you will be able to use the apps but it will bypass Two-Factor Authentication.", 'authy')?></p>
+    <p class ='description'><?php _e( "WordPress mobile app's don't support Two-Factor authentication. If you disable this option you will be able to use the apps but it will bypass Two-Factor Authentication.", 'authy' )?></p>
     <?php
   }
 
@@ -420,18 +423,18 @@ class Authy {
     ?>
     <div class="wrap">
       <?php screen_icon(); ?>
-      <h2><?php echo $plugin_name; ?></h2>
+      <h2><?php echo esc_attr( $plugin_name ); ?></h2>
 
       <?php if ( $this->ready ) :
         $details = $this->api->application_details();
       ?>
-      <p><?php _e( "Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.", 'authy' ); ?></p>
-      <p><?php _e( "You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking \"Enable Authy\" button on their settings.", 'authy' ); ?></p>
+      <p><?php _e( 'Enter your Authy API key (get one on authy.com/signup). You can select which users can enable authy by their WordPress role. Users can then enable Authy on their individual accounts by visting their user profile pages.', 'authy' ); ?></p>
+      <p><?php _e( 'You can also enable and force Two-Factor Authentication by editing the user on the Users page, and then clicking "Enable Authy" button on their settings.', 'authy' ); ?></p>
 
       <?php else :  ?>
         <p><?php printf( __( 'To use the Authy service, you must register an account at <a href="%1$s"><strong>%1$s</strong></a> and create an application for access to the Authy API.', 'authy' ), 'https://www.authy.com/' ); ?></p>
         <p><?php _e( "Once you've created your application, enter your API keys in the fields below.", 'authy' ); ?></p>
-        <p><?php printf( __( "Until your API keys are entered, the %s plugin cannot function.", 'authy' ), $plugin_name ); ?></p>
+        <p><?php printf( __( 'Until your API keys are entered, the %s plugin cannot function.', 'authy' ), $plugin_name ); ?></p>
       <?php endif; ?>
 
       <form action="options.php" method="post">
@@ -441,28 +444,28 @@ class Authy {
         <?php do_settings_sections( $this->settings_page ); ?>
 
         <p class="submit">
-          <input name="Submit" type="submit" value="<?php esc_attr_e('Save Changes');?>" class="button-primary">
+          <input name="Submit" type="submit" value="<?php esc_attr_e( 'Save Changes' );?>" class="button-primary">
         </p>
       </form>
 
-      <?php if( !empty($details) ){ ?>
+      <?php if ( !empty( $details ) ) { ?>
         <h2>Application Details</h2>
 
         <table class='widefat' style="width:400px;">
           <tbody>
             <tr>
-              <th><?php printf(__('Application name', 'authy')); ?></th>
-              <td><?php print $details['app']->name ?></td>
+              <th><?php printf( __( 'Application name', 'authy' ) ); ?></th>
+              <td><?php print esc_attr( $details['app']->name ); ?></td>
             </tr>
             <tr>
-              <th><?php printf(__('Plan', 'authy')); ?></th>
-              <td><?php print ucfirst($details['app']->plan) ?></td>
+              <th><?php printf( __( 'Plan', 'authy' ) ); ?></th>
+              <td><?php print esc_attr( ucfirst( $details['app']->plan ) ); ?></td>
             </tr>
           </tbody>
         </table>
 
-        <?php if($details['app']->plan == 'sandbox'){ ?>
-          <strong style='color: #bc0b0b;'><?php _e( "Warning: text-messages won't work on the current plan. Upgrade for free to the Starter plan on your authy.com dashboard to enable text-messages.") ?></strong>
+        <?php if ( $details['app']->plan == 'sandbox' ) { ?>
+          <strong style='color: #bc0b0b;'><?php _e( "Warning: text-messages won't work on the current plan. Upgrade for free to the Starter plan on your authy.com dashboard to enable text-messages.", 'authy' ); ?></strong>
         <?php }
       }?>
     </div>
@@ -521,18 +524,18 @@ class Authy {
   * @uses $wp_roles
   * @return array
   */
-  public function roles_validate ($roles){
+  public function roles_validate( $roles ) {
 
-    if(!is_array($roles) || empty($roles)){
+    if ( !is_array( $roles ) || empty( $roles ) ) {
       return array();
     }
 
     global $wp_roles;
     $listRoles = $wp_roles->get_names();
 
-    foreach ($roles as $role) {
-      if (!in_array($roles, $listRoles)) {
-        unset($roles[$role]);
+    foreach ( $roles as $role ) {
+      if ( !in_array( $roles, $listRoles ) ) {
+        unset( $roles[$role] );
       }
     }
 
@@ -553,13 +556,13 @@ class Authy {
     $meta = $this->get_authy_data( $user->ID );
 
     if ( $this->user_has_authy_id( $user->ID ) ) {
-      if (!$this->with_force_by_admin( $user->ID)){ ?>
+      if ( !$this->with_force_by_admin( $user->ID ) ) { ?>
         <h3><?php echo esc_html( $this->name ); ?></h3>
-        <?php echo disable_form_on_profile($this->users_key);
+        <?php echo disable_form_on_profile( $this->users_key );
       }
-    } elseif ($this->available_authy_for_role($user)) {?>
+    } elseif ( $this->available_authy_for_role( $user ) ) {?>
       <h3><?php echo esc_html( $this->name ); ?></h3>
-      <?php echo register_form_on_profile($this->users_key, $meta);
+      <?php echo register_form_on_profile( $this->users_key, $meta );
     }
   }
 
@@ -578,11 +581,11 @@ class Authy {
    * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, this::clear_authy_data, get_user_meta, update_user_meta
    * @return null
    */
-  public function set_authy_data( $user_id, $email, $phone, $country_code, $force_by_admin = 'false', $authy_id = '') {
+  public function set_authy_data( $user_id, $email, $phone, $country_code, $force_by_admin = 'false', $authy_id = '' ) {
     // Retrieve user's existing Authy ID, or get one from Authy
     if ( $this->user_has_authy_id( $user_id ) ) {
       $authy_id = $this->get_user_authy_id( $user_id );
-    } elseif ($authy_id == '') {
+    } elseif ( $authy_id == '' ) {
       // Request an Authy ID with given user information
       $response = $this->api->register_user( $email, $phone, $country_code );
 
@@ -593,31 +596,30 @@ class Authy {
       }
     }
 
-    // Build array of Authy data
-    $data_sanitized = array(
-      'email'          => $email,
-      'phone'          => $phone,
-      'country_code'   => $country_code,
-      'force_by_admin' => $force_by_admin
-    );
-
     if ( isset( $authy_id ) ) {
-      $data_sanitized['authy_id'] = $authy_id;
-    }
+      // Build array of Authy data
+      $data_sanitized = array(
+        'email'          => $email,
+        'phone'          => $phone,
+        'country_code'   => $country_code,
+        'authy_id'       => $authy_id,
+        'force_by_admin' => $force_by_admin,
+      );
 
-    $data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
+      $data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
 
-    // Update Authy data if sufficient information is provided, otherwise clear the option out.
-    if ( empty( $data_sanitized['phone'] ) ) {
-      $this->clear_authy_data( $user_id );
-    } else {
-      $data = get_user_meta( $user_id, $this->users_key, true );
-      if ( ! is_array( $data ) ) {
-        $data = array();
+      // Update Authy data if sufficient information is provided, otherwise clear the option out.
+      if ( empty( $data_sanitized['phone'] ) ) {
+        $this->clear_authy_data( $user_id );
+      } else {
+        $data = get_user_meta( $user_id, $this->users_key, true );
+        if ( ! is_array( $data ) ) {
+          $data = array();
+        }
+
+        $data[ $this->api_key ] = $data_sanitized;
+        update_user_meta( $user_id, $this->users_key, $data );
       }
-
-      $data[ $this->api_key ] = $data_sanitized;
-      update_user_meta( $user_id, $this->users_key, $data );
     }
   }
 
@@ -704,9 +706,9 @@ class Authy {
   *
   */
   protected function with_force_by_admin( $user_id ) {
-    $data = $this->get_authy_data( $user_id);
+    $data = $this->get_authy_data( $user_id );
 
-    if ($data['force_by_admin'] == 'true') {
+    if ( $data['force_by_admin'] == 'true' ) {
       return true;
     }
 
@@ -772,9 +774,9 @@ class Authy {
           $name = esc_attr( $this->users_key );
         ?>
         <tr>
-          <th><label for="<?php echo $name; ?>"><?php _e( "Two Factor Authentication", 'authy' ); ?></label></th>
+          <th><label for="<?php echo esc_attr( $name ); ?>"><?php _e( 'Two Factor Authentication', 'authy' ); ?></label></th>
           <td>
-            <input type="checkbox" id="<?php echo $name; ?>" name="<?php echo $name; ?>" value="1" checked/>
+            <input type="checkbox" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" checked/>
           </td>
         </tr>
         <?php wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
@@ -783,7 +785,7 @@ class Authy {
           $authy_data = $this->get_authy_data( $user->ID );
         ?>
         <tr>
-          <p><?php _e("To enable Authy enter the country and cellphone number of the person who is going to use this account.", 'authy')?></p>
+          <p><?php _e( 'To enable Authy enter the country and cellphone number of the person who is going to use this account.', 'authy' )?></p>
           <th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
           <td>
             <input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
@@ -797,11 +799,11 @@ class Authy {
           <?php wp_nonce_field( $this->users_key . '_edit', "_{$this->users_key}_wpnonce" ); ?>
         </tr>
         <tr>
-          <th><?php _e('Force enable Authy', 'authy'); ?></th>
+          <th><?php _e( 'Force enable Authy', 'authy' ); ?></th>
           <td>
             <label for="force-enable">
               <input name="<?php echo esc_attr( $this->users_key ); ?>[force_enable_authy]" type="checkbox" value="true" <?php if ($authy_data['force_by_admin'] == 'true') echo 'checked="checked"'; ?> />
-              <?php _e('Force this user to enable Authy Two-Factor Authentication on the next login.', 'authy'); ?>
+              <?php _e( 'Force this user to enable Authy Two-Factor Authentication on the next login.', 'authy' ); ?>
             </label>
           </td>
         </tr>
@@ -815,20 +817,20 @@ class Authy {
   * Add errors when editing another user's profile
   *
   */
-  public function check_user_fields(&$errors, $update, &$user) {
-    if ( $update && !empty($_POST['authy_user']['phone']) ) {
-
-      if ( empty($_POST['authy_user']['country_code']) ) {
-        $errors->add('authy_error', '<strong>Error:</strong> ' . "Authy contry code can't blank");
+  public function check_user_fields( &$errors, $update, &$user ) {
+    if ( $update && !empty( $_POST['authy_user']['phone'] ) ) {
+      if ( empty( $_POST['authy_user']['country_code'] ) ) {
+        $errors->add( 'authy_error', '<strong>Error:</strong> ' . "Authy contry code can't blank" );
       } else {
         $response = $this->api->register_user( $_POST['email'], $_POST['authy_user']['phone'], $_POST['authy_user']['country_code'] );
 
-        if ($response->errors) {
-          foreach ($response->errors as $attr => $message) {
-            if ($attr == 'country_code')
-              $errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid');
-            elseif ($attr != 'message')
-              $errors->add('authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message);
+        if ( !empty( $response->errors ) ) {
+          foreach ( $response->errors as $attr => $message ) {
+            if ( $attr == 'country_code' ) {
+              $errors->add( 'authy_error', '<strong>Error:</strong> ' . 'Authy country code is invalid' );
+            } elseif ( $attr != 'message' ) {
+              $errors->add( 'authy_error', '<strong>Error:</strong> ' . 'Authy ' . $attr . ' ' . $message );
+            }
           }
         }
       }
@@ -898,21 +900,20 @@ class Authy {
     $this->ajax_head();
 
     // iframe body
-    ?><body <?php body_class('wp-admin wp-core-ui authy-user-modal'); ?>>
+    ?><body <?php body_class( 'wp-admin wp-core-ui authy-user-modal' ); ?>>
       <div class="wrap">
         <h2>Authy Two-Factor Authentication</h2>
 
         <form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
           <?php
-            switch( $step ) {
+            switch ( $step ) {
               default :
                 if ( $this->user_has_authy_id( $user_id ) ) { ?>
                   <p><?php _e( 'Authy is enabled for this account.', 'authy' ); ?></p>
-
                   <p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy' ), $user_data->user_login ); ?></p>
 
                   <p class="submit">
-                    <input name="Disable" type="submit" value="<?php esc_attr_e('Disable Authy');?>" class="button-primary">
+                    <input name="Disable" type="submit" value="<?php esc_attr_e( 'Disable Authy' );?>" class="button-primary">
                   </p>
 
                   <input type="hidden" name="authy_step" value="disable" />
@@ -932,9 +933,9 @@ class Authy {
                         <p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
 
                         <p>
-                          <?php _e( 'We\'ve sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we\'ll automatically send you a text-message to your cellphone ', 'authy'); ?>
-                          <strong><?php echo $phone; ?></strong>
-                          <?php _e('on every login with the token that you need to use for when you login.', 'authy' ); ?>
+                          <?php _e( "We've sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we'll automatically send you a text-message to your cellphone ", 'authy' ); ?>
+                          <strong><?php echo esc_attr( $phone ); ?></strong>
+                          <?php _e( 'on every login with the token that you need to use for when you login.', 'authy' ); ?>
                         </p>
 
                         <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
@@ -948,10 +949,9 @@ class Authy {
                         <?php
                       }
                       exit;
-
                     } else {
-                      if ( isset($response->errors) ) {
-                        $errors = get_object_vars($response->errors);
+                      if ( isset( $response->errors ) ) {
+                        $errors = get_object_vars( $response->errors );
                       } else {
                         $errors = $response;
                       }
@@ -965,41 +965,17 @@ class Authy {
                   <?php
                     if ( !empty($errors) ) { ?>
                       <div class='error'><?php
-                        foreach ($errors as $key => $value) {
-                          if ($key == 'country_code') {
+                        foreach ( $errors as $key => $value ) {
+                          if ( $key == 'country_code' ) {
                             ?><p><strong>Country code</strong> is not valid.</p><?php
-                          } else {
-                            ?><p><strong><?php echo ucfirst($key); ?></strong><?php echo ' ' . $value; ?></p><?php
+                          } elseif ( $key != 'message' ) {
+                            ?><p><strong><?php echo esc_attr( ucfirst( $key ) ); ?></strong><?php echo ' ' . $value; ?></p><?php
                           }
                         }?>
                       </div><?php
                     }
-                  ?>
-
-                  <table class="form-table" id="<?php echo esc_attr( $this->users_key ); ?>-ajax">
-                    <tr>
-                      <th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
-                      <td>
-                        <input type="text" id="authy-countries" class="small-text" name="authy_country_code" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" required />
-                      </td>
-                    </tr>
-                    <tr>
-                      <th><label for="phone"><?php _e( 'Cellphone number', 'authy' ); ?></label></th>
-                      <td>
-                        <input type="tel" id="authy-cellphone" class="regular-text" name="authy_phone" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" style="width:140px;" />
-                      </td>
-                    </tr>
-
-                  </table>
-
-                  <input type="hidden" name="authy_step" value="" />
-                  <?php wp_nonce_field( $this->users_key . '_ajax_check' ); ?>
-
-                  <p class="submit">
-                    <input name="Continue" type="submit" value="<?php esc_attr_e('Continue');?>" class="button-primary">
-                  </p>
-
-                <?php }
+                    register_form_with_js( $this->users_key, $authy_data ); // Display form modal for enable authy
+                  }
 
                 break;
 
@@ -1007,7 +983,7 @@ class Authy {
                 if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' ) )
                   $this->clear_authy_data( $user_id );?>
 
-                <p><?php print_r( __('Authy was disabled', 'authy'));?></p>
+                <p><?php echo esc_attr_e( 'Authy was disabled', 'authy' );?></p>
                 <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
                 <?php
                   exit;
@@ -1030,10 +1006,10 @@ class Authy {
    * @param string $username
    * @return mixed
    */
-  public function action_request_sms($username, $force = false, $authy_id = '') {
-    $user = get_user_by('login', $username);
+  public function action_request_sms( $username, $force = false, $authy_id = '' ) {
+    $user = get_user_by( 'login', $username );
 
-    if ( empty($authy_id) ) {
+    if ( empty( $authy_id ) ) {
       $authy_id = $this->get_user_authy_id( $user->ID );
     }
     $api_rsms = $this->api->request_sms( $authy_id, $force );
@@ -1045,16 +1021,16 @@ class Authy {
    * @return string
    */
   public function request_sms_ajax() {
-    $user = get_user_by('login', $_GET['username']);
-    $signature = get_user_meta($user->ID, $this->signature_key, true);
-    $data_temp = get_user_meta($user->ID, $this->authy_data_temp_key, true);
+    $user = get_user_by( 'login', $_GET['username'] );
+    $signature = get_user_meta( $user->ID, $this->signature_key, true );
+    $data_temp = get_user_meta( $user->ID, $this->authy_data_temp_key, true );
 
-    if ($signature['authy_signature'] === $_GET['signature']) {
-      $response = $this->action_request_sms($_GET['username'], true, $data_temp['authy_id']);
+    if ( $signature['authy_signature'] === $_GET['signature'] ) {
+      $response = $this->action_request_sms( $_GET['username'], true, $data_temp['authy_id'] );
     } else {
-      $response = _e('Error', 'authy');
+      $response = _e( 'Error', 'authy' );
     }
-    echo $response;
+    echo esc_attr( $response );
     die();
   }
 
@@ -1071,15 +1047,14 @@ class Authy {
       if ( !isset( $_POST[ $this->users_key ] ) ){
         $this->clear_authy_data( $user_id );
       }
-    }else{
+    } else {
       // Register user in Authy application
-      if ( !empty($_POST['authy_user']['country_code']) && !empty($_POST['authy_user']['phone']) ) {
+      if ( !empty( $_POST['authy_user']['country_code'] ) && !empty( $_POST['authy_user']['phone'] ) ) {
         $email = $_POST['email'];
         $phone = $_POST['authy_user']['phone'];
         $country_code = $_POST['authy_user']['country_code'];
         $this->set_authy_data( $user_id, $email, $phone, $country_code, 'true' );
-
-      } elseif ( !empty($_POST['authy_user']['force_enable_authy']) && $_POST['authy_user']['force_enable_authy'] == 'true' ) {
+      } elseif ( !empty( $_POST['authy_user']['force_enable_authy'] ) && $_POST['authy_user']['force_enable_authy'] == 'true' ) {
         // Force the user for enable authy 2FA
         $data = array();
         $data[ $this->api_key ] = array('force_by_admin' => 'true');
@@ -1099,11 +1074,11 @@ class Authy {
    * @uses _e
    * @return string
    */
-  public function render_authy_token_page($user, $redirect) {
+  public function render_authy_token_page( $user, $redirect ) {
     $username = $user->user_login;
     $user_data = $this->get_authy_data( $user->ID );
-    $user_signature = get_user_meta($user->ID, $this->signature_key, true);
-    authy_token_form($username, $user_data, $user_signature, $redirect, $errors);
+    $user_signature = get_user_meta( $user->ID, $this->signature_key, true );
+    authy_token_form( $username, $user_data, $user_signature, $redirect, $errors );
   }
 
   /**
@@ -1115,10 +1090,10 @@ class Authy {
   * @param string $errors
   * @return string
   */
-  public function render_verify_authy_installation($user, $errors = '') {
+  public function render_verify_authy_installation( $user, $errors = '' ) {
     $user_data = $this->get_authy_data( $user->ID );
-    $user_signature = get_user_meta($user->ID, $this->signature_key, true);
-    authy_installation_form($user, $user_data, $user_signature['authy_signature'], $errors);
+    $user_signature = get_user_meta( $user->ID, $this->signature_key, true );
+    authy_installation_form( $user, $user_data, $user_signature['authy_signature'], $errors );
   }
 
   /**
@@ -1127,27 +1102,27 @@ class Authy {
    * @param mixed $user
    * @return mixed
    */
-  public function login_with_2FA($user, $signature, $authy_token, $redirect_to) {
+  public function login_with_2FA( $user, $signature, $authy_token, $redirect_to ) {
     // Do 2FA if signature is valid.
-    if($this->api->verify_signature(get_user_meta($user->ID, $this->signature_key, true), $signature)) {
+    if ( $this->api->verify_signature( get_user_meta( $user->ID, $this->signature_key, true ), $signature ) ) {
       // invalidate signature
-      update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+      update_user_meta( $user->ID, $this->signature_key, array( 'authy_signature' => $this->api->generate_signature(), 'signed_at' => null ) );
 
       // Check the specified token
       $authy_id = $this->get_user_authy_id( $user->ID );
       $authy_token = preg_replace( '#[^\d]#', '', $authy_token );
-      $api_response = $this->api->check_token( $authy_id, $authy_token);
+      $api_response = $this->api->check_token( $authy_id, $authy_token );
 
       // Act on API response
       if ( $api_response === true ) {
-        wp_set_auth_cookie($user->ID);
-        wp_safe_redirect($redirect_to);
+        wp_set_auth_cookie( $user->ID );
+        wp_safe_redirect( $redirect_to );
         exit(); // redirect without returning anything.
       } elseif ( is_string( $api_response ) ) {
-        return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong>: ' . $api_response, 'authy') );
+        return new WP_Error( 'authentication_failed', __( '<strong>ERROR</strong>: ' . $api_response, 'authy' )  );
       }
     }
-    return new WP_Error( 'authentication_failed', __('<strong>ERROR</strong> Authentication timed out. Please try again.', 'authy'));
+    return new WP_Error( 'authentication_failed', __( '<strong>ERROR</strong> Authentication timed out. Please try again.', 'authy' ) );
   }
 
   /**
@@ -1159,35 +1134,35 @@ class Authy {
    * @param string $redirect_to
    * @return mixed
    */
-  public function verify_password_and_redirect($user, $username, $password, $redirect_to) {
-    $userWP = get_user_by('login', $username);
+  public function verify_password_and_redirect( $user, $username, $password, $redirect_to ) {
+    $userWP = get_user_by( 'login', $username );
 
     // Don't bother if WP can't provide a user object.
     if ( ! is_object( $userWP ) || ! property_exists( $userWP, 'ID' ) ) {
       return $userWP;
     }
 
-    if ( ! $this->user_has_authy_id( $userWP->ID ) && ! $this->with_force_by_admin($userWP->ID)) {
+    if ( ! $this->user_has_authy_id( $userWP->ID ) && ! $this->with_force_by_admin( $userWP->ID ) ) {
       return $user; // wordpress will continue authentication.
     }
 
     // from here we take care of the authentication.
-    remove_action('authenticate', 'wp_authenticate_username_password', 20);
+    remove_action( 'authenticate', 'wp_authenticate_username_password', 20 );
 
-    $ret = wp_authenticate_username_password($user, $username, $password);
-    if(is_wp_error($ret)) {
+    $ret = wp_authenticate_username_password( $user, $username, $password );
+    if ( is_wp_error( $ret ) ) {
       return $ret; // there was an error
     }
 
     $user = $ret;
     $signature = $this->api->generate_signature();
-    update_user_meta($user->ID, $this->signature_key, array("authy_signature" => $signature, "signed_at" => time()));
+    update_user_meta( $user->ID, $this->signature_key, array( 'authy_signature' => $signature, 'signed_at' => time() ) );
 
-    if ( $this->with_force_by_admin($userWP->ID) && ! $this->user_has_authy_id($userWP->ID) ) {
-      enable_authy_page($userWP, $signature); // Show the enable authy page
+    if ( $this->with_force_by_admin( $userWP->ID ) && ! $this->user_has_authy_id( $userWP->ID ) ) {
+      enable_authy_page( $userWP, $signature ); // Show the enable authy page
     } else {
-      $this->action_request_sms($username); // Send sms
-      $this->render_authy_token_page($user, $redirect_to); // Show the authy token page
+      $this->action_request_sms( $username ); // Send sms
+      $this->render_authy_token_page( $user, $redirect_to ); // Show the authy token page
     }
     exit();
   }
@@ -1198,36 +1173,36 @@ class Authy {
    * @param array $params
    * @return mixed
    */
-  public function enable_authy($params) {
-    $userWP = get_user_by('login', $params['username']);
+  public function enable_authy( $params ) {
+    $userWP = get_user_by( 'login', $params['username'] );
 
-    $signature = get_user_meta($userWP->ID, $this->signature_key, true);
-    if ($signature['authy_signature'] != $params['signature']) {
-      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    $signature = get_user_meta( $userWP->ID, $this->signature_key, true );
+    if ( $signature['authy_signature'] != $params['signature'] ) {
+      return new WP_Error( 'authentication_failed', __( '<strong>ERROR: Authentication failed</strong>', 'authy' ) );
     }
 
     // Request an Authy ID with given user information
-    $response = $this->api->register_user( $userWP->user_email, $params['cellphone'], $params['country_code']);
+    $response = $this->api->register_user( $userWP->user_email, $params['cellphone'], $params['country_code'] );
 
     if ( $response->user && $response->user->id ) {
       $authy_id = $response->user->id;
 
       // Save the authy ID temporarily in db
-      $data_temp = array("authy_id" => $authy_id, 'cellphone' => $params['cellphone'], 'country_code' => $params['country_code']);
-      update_user_meta($userWP->ID, $this->authy_data_temp_key, $data_temp);
+      $data_temp = array( 'authy_id' => $authy_id, 'cellphone' => $params['cellphone'], 'country_code' => $params['country_code'] );
+      update_user_meta( $userWP->ID, $this->authy_data_temp_key, $data_temp );
       // Go to verify authy installation page
-      $this->render_verify_authy_installation($userWP);
+      $this->render_verify_authy_installation( $userWP );
     } else {
       $errors = array();
-      if ($response->errors) {
-        foreach ($response->errors as $attr => $message) {
-          if ($attr == 'country_code')
-            array_push($errors, 'Country code is invalid');
-          elseif ($attr != 'message')
-            array_push($errors, $attr . ' ' . $message);
+      if ( $response->errors ) {
+        foreach ( $response->errors as $attr => $message ) {
+          if ( $attr == 'country_code' )
+            array_push( $errors, 'Country code is invalid' );
+          elseif ( $attr != 'message' )
+            array_push( $errors, $attr . ' ' . $message );
         }
       }
-      enable_authy_page($userWP, $signature['authy_signature'], $errors);
+      enable_authy_page( $userWP, $signature['authy_signature'], $errors );
     }
     exit();
   }
@@ -1235,25 +1210,25 @@ class Authy {
   /**
    *
    */
-  public function verify_authy_installation($params) {
-    $userWP = get_user_by('login', $params['username']);
+  public function verify_authy_installation( $params ) {
+    $userWP = get_user_by( 'login', $params['username'] );
 
-    $signature = get_user_meta($userWP->ID, $this->signature_key, true);
-    if ($signature['authy_signature'] != $params['signature']) {
-      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    $signature = get_user_meta( $userWP->ID, $this->signature_key, true );
+    if ( $signature['authy_signature'] != $params['signature'] ) {
+      return new WP_Error( 'authentication_failed', __( '<strong>ERROR: Authentication failed</strong>', 'authy' ) );
     }
 
-    if ( $this->user_has_authy_id($userWP->ID) || !$this->with_force_by_admin($userWP->ID)) {
-      return new WP_Error('authentication_failed', __('<strong>ERROR: Authentication failed</strong>', 'authy') );
+    if ( $this->user_has_authy_id( $userWP->ID ) || !$this->with_force_by_admin( $userWP->ID ) ) {
+      return new WP_Error( 'authentication_failed', __( '<strong>ERROR: Authentication failed</strong>', 'authy' ) );
     }
 
     // Get the temporal authy data
-    $data_temp = get_user_meta($userWP->ID, $this->authy_data_temp_key, true);
+    $data_temp = get_user_meta( $userWP->ID, $this->authy_data_temp_key, true );
     $authy_id = $data_temp['authy_id'];
 
     // Check the specified token
     $authy_token = preg_replace( '#[^\d]#', '', $params['authy_token'] );
-    $check_token_response = $this->api->check_token( $authy_id, $authy_token);
+    $check_token_response = $this->api->check_token( $authy_id, $authy_token );
 
     if ( $check_token_response === true ) {
       // Save authy data of user on database
@@ -1261,20 +1236,21 @@ class Authy {
         $userWP->ID,
         $userWP->user_email,
         $data_temp['cellphone'],
-        $data_temp['country_code'], 'true',
+        $data_temp['country_code'],
+        'true',
         $authy_id
       );
 
-      delete_user_meta($userWP->ID, $this->authy_data_temp_key); // Delete temporal authy data
+      delete_user_meta( $userWP->ID, $this->authy_data_temp_key ); // Delete temporal authy data
 
       // invalidate signature
-      update_user_meta($userWP->ID, $this->signature_key, array("authy_signature" => $this->api->generate_signature(), "signed_at" => null));
+      update_user_meta( $userWP->ID, $this->signature_key, array( 'authy_signature' => $this->api->generate_signature(), 'signed_at' => null ) );
       // Login user and redirect
-      wp_set_auth_cookie($userWP->ID);
-      wp_safe_redirect(admin_url());
-    } else{
+      wp_set_auth_cookie( $userWP->ID );
+      wp_safe_redirect( admin_url() );
+    } else {
       // Show the errors
-      $this->render_verify_authy_installation($userWP, $check_token_response);
+      $this->render_verify_authy_installation( $userWP, $check_token_response );
       exit();
     }
   }
@@ -1291,7 +1267,7 @@ class Authy {
   * @return mixed
   */
 
-  public function authenticate_user($user="", $username="", $password="") {
+  public function authenticate_user( $user = '', $username = '', $password = '' ) {
     // If XMLRPC_REQUEST is disabled stop
     if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) ) {
       return $user;
@@ -1300,44 +1276,46 @@ class Authy {
     $ret = null;
     $step = $_POST['step'];
 
-    if (! empty( $username )) {
-      $ret = $this->verify_password_and_redirect($user, $username, $password, $_POST['redirect_to']);
+    if ( !empty( $username ) ) {
+      $ret = $this->verify_password_and_redirect( $user, $username, $password, $_POST['redirect_to'] );
     }
-    elseif (empty($step) && isset($_POST['authy_signature']) && isset( $_POST['authy_token'] ) )
+    elseif ( empty( $step ) && isset( $_POST['authy_signature'] ) && isset( $_POST['authy_token'] ) )
     {
-      $user = get_user_by('login', $_POST['username']);
+      $user = get_user_by( 'login', $_POST['username'] );
       // This line prevents WordPress from setting the authentication cookie and display errors.
-      remove_action('authenticate', 'wp_authenticate_username_password', 20);
+      remove_action( 'authenticate', 'wp_authenticate_username_password', 20 );
 
-      $ret = $this->login_with_2FA($user, $_POST['authy_signature'], $_POST['authy_token'], $_POST['redirect_to']);
+      $ret = $this->login_with_2FA( $user, $_POST['authy_signature'], $_POST['authy_token'], $_POST['redirect_to'] );
     }
-    elseif ($step == 'enable_authy' && isset($_POST['authy_user']['country_code']) && isset($_POST['authy_user']['cellphone'])  )
-    { // if step is enable_authy and have country_code and phone show the enable authy page
+    elseif ( $step == 'enable_authy' && isset( $_POST['authy_user']['country_code'] ) && isset( $_POST['authy_user']['cellphone'] ) )
+    {
+      // if step is enable_authy and have country_code and phone show the enable authy page
       $params = array(
         'username' => $_POST['username'],
         'signature' => $_POST['authy_signature'],
         'cellphone' => $_POST['authy_user']['cellphone'],
-        'country_code' => $_POST['authy_user']['country_code']
+        'country_code' => $_POST['authy_user']['country_code'],
       );
 
-      $ret = $this->enable_authy($params);
+      $ret = $this->enable_authy( $params );
     }
-    elseif ( $step == 'verify_installation' && isset($_POST['authy_token']) )
-    { // If step is verify_installation and have authy_token show the verify authy installation page.
+    elseif ( $step == 'verify_installation' && isset( $_POST['authy_token'] ) )
+    {
+      // If step is verify_installation and have authy_token show the verify authy installation page.
       $params = array(
         'username' => $_POST['username'],
         'authy_token' => $_POST['authy_token'],
-        'signature' => $_POST['authy_signature']
+        'signature' => $_POST['authy_signature'],
       );
 
-      $ret = $this->verify_authy_installation($params);
+      $ret = $this->verify_authy_installation( $params );
     }
 
-    if ( is_wp_error($ret) || is_object( $ret )) {
+    if ( is_wp_error( $ret ) || is_object( $ret ) ) {
       return $ret;
     }
 
-    return new WP_Error('authentication_failed', __('<strong>ERROR</strong>') );
+    return new WP_Error( 'authentication_failed', __( '<strong>ERROR</strong>' ) );
   }
 }
 

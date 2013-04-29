@@ -114,12 +114,13 @@ class Authy_API {
 
       $status_code = wp_remote_retrieve_response_code( $response );
       $body = wp_remote_retrieve_body($response);
-      $body = get_object_vars(json_decode($body));
+      $body = json_decode($body);
 
-      if ( $status_code == 200 && strtolower($body['token'])  == 'is valid')
+      if ( $status_code == 200 && strtolower($body->token)  == 'is valid') {
         return true;
-      elseif ( $status_code == 401)
+      } elseif ( $status_code == 401) {
         return __( 'Invalid Authy Token.', 'authy' );
+      }
     }
 
     return false;
@@ -135,20 +136,21 @@ class Authy_API {
     $endpoint = sprintf( '%s/protected/json/sms/%d', $this->api_endpoint, $id );
     $arguments = array('api_key' => $this->api_key);
 
-    if ($force == true)
+    if ($force == true) {
       $arguments['force'] = 'true';
+    }
 
     $endpoint = add_query_arg( $arguments, $endpoint);
     $response = wp_remote_get($endpoint);
     $status_code = wp_remote_retrieve_response_code($response);
-
     $body = wp_remote_retrieve_body($response);
-    $body = get_object_vars(json_decode($body));
+    $body = json_decode($body);
 
-    if ( $status_code == 200 )
+    if ( $status_code == 200 ) {
       return __( 'SMS token was sent. Please allow at least 1 minute for the text to arrive.', 'authy' );
+    }
 
-    return __( $body['message'], 'authy' );
+    return __( $body->message, 'authy' );
   }
 
   /**
@@ -164,8 +166,9 @@ class Authy_API {
     $body = wp_remote_retrieve_body($response);
     $body = get_object_vars(json_decode($body));
 
-    if ( $status_code == 200)
+    if ( $status_code == 200) {
       return $body;
+    }
 
     return array();
   }
