@@ -736,7 +736,6 @@ class Authy {
 
     /**
      * Allow sufficiently-priviledged users to disable another user's Authy service.
-     * FIXME: move html to helpers.php
      *
      * @param object $user
      * @uses current_user_can, this::user_has_authy_id, get_user_meta, wp_parse_args, esc_attr, wp_nonce_field
@@ -756,44 +755,14 @@ class Authy {
                 if ( $this->user_has_authy_id( $user->ID ) ) :
                     $meta = get_user_meta( get_current_user_id(), $this->users_key, true );
                     $meta = wp_parse_args( $meta, $this->user_defaults );
-                    $name = esc_attr( $this->users_key );
-                ?>
-                    <tr>
-                        <th><label for="<?php echo esc_attr( $name ); ?>"><?php _e( 'Two Factor Authentication', 'authy' ); ?></label></th>
-                        <td>
-                            <input type="checkbox" id="<?php echo esc_attr( $name ); ?>" name="<?php echo esc_attr( $name ); ?>" value="1" checked/>
-                        </td>
-                    </tr>
-                    <?php wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" ); ?>
 
-                <?php
+                    checkbox_for_admin_disable_authy( $this->users_key );
+                    wp_nonce_field( $this->users_key . '_disable', "_{$this->users_key}_wpnonce" );
                 else :
                     $authy_data = $this->get_authy_data( $user->ID );
+                    render_admin_form_enable_authy( $this->users_key, $authy_data );
+                endif;
                 ?>
-                    <tr>
-                        <p><?php _e( 'To enable Authy enter the country and cellphone number of the person who is going to use this account.', 'authy' )?></p>
-                        <th><label for="phone"><?php _e( 'Country', 'authy' ); ?></label></th>
-                        <td>
-                            <input type="text" id="authy-countries" class="small-text" name="<?php echo esc_attr( $this->users_key ); ?>[country_code]" value="<?php echo esc_attr( $authy_data['country_code'] ); ?>" />
-                        </td>
-                    </tr>
-                    <tr>
-                        <th><label for="phone"><?php _e( 'Cellphone number', 'authy' ); ?></label></th>
-                        <td>
-                            <input type="tel" class="regular-text" id="authy-cellphone" name="<?php echo esc_attr( $this->users_key ); ?>[phone]" value="<?php echo esc_attr( $authy_data['phone'] ); ?>" />
-                        </td>
-                        <?php wp_nonce_field( $this->users_key . '_edit', "_{$this->users_key}_wpnonce" ); ?>
-                    </tr>
-                    <tr>
-                        <th><?php _e( 'Force enable Authy', 'authy' ); ?></th>
-                        <td>
-                            <label for="force-enable">
-                                <input name="<?php echo esc_attr( $this->users_key ); ?>[force_enable_authy]" type="checkbox" value="true" <?php if ($authy_data['force_by_admin'] == 'true') echo 'checked="checked"'; ?> />
-                                <?php _e( 'Force this user to enable Authy Two-Factor Authentication on the next login.', 'authy' ); ?>
-                            </label>
-                        </td>
-                    </tr>
-                <?php endif; ?>
             </table>
         <?php
     }
@@ -866,126 +835,78 @@ class Authy {
      * @return string
      */
     public function get_user_modal_via_ajax() {
-      // If nonce isn't set, bail
-      if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
-          ?><script type="text/javascript">self.parent.tb_remove();</script><?php
-          exit;
-      }
+        // If nonce isn't set, bail
+        if ( ! isset( $_REQUEST['nonce'] ) || ! wp_verify_nonce( $_REQUEST['nonce'], $this->users_key . '_ajax' ) ) {
+            ?><script type="text/javascript">self.parent.tb_remove();</script><?php
+            exit;
+        }
 
-      // User data
-      $user_id = get_current_user_id();
-      $user_data = get_userdata( $user_id );
-      $authy_data = $this->get_authy_data( $user_id );
-      $errors = array();
+        // User data
+        $user_id = get_current_user_id();
+        $user_data = get_userdata( $user_id );
+        $authy_data = $this->get_authy_data( $user_id );
+        $username = $user_data->user_login;
+        $errors = array();
 
-      // Step
-      $step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
+        // Step
+        $step = isset( $_REQUEST['authy_step'] ) ? preg_replace( '#[^a-z0-9\-_]#i', '', $_REQUEST['authy_step'] ) : false;
 
-      //iframe head
-      $this->ajax_head();
+        //iframe head
+        $this->ajax_head();
 
-      // iframe body
-      ?>
-          <body <?php body_class( 'wp-admin wp-core-ui authy-user-modal' ); ?>>
-              <div class="wrap">
+        $is_enabling = isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_check' );
+        $is_disabling = $step == 'disable' && isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' );
+
+        // iframe body
+        ?>
+        <body <?php body_class( 'wp-admin wp-core-ui authy-user-modal' ); ?>>
+            <div class="wrap">
                 <h2>Authy Two-Factor Authentication</h2>
 
                 <form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
-                  <?php
-                    switch ( $step ) {
-                      default :
-                        if ( $this->user_has_authy_id( $user_id ) ) { ?>
-                          <p><?php _e( 'Authy is enabled for this account.', 'authy' ); ?></p>
-                          <p><?php printf( __( 'Click the button below to disable Two-Factor Authentication for <strong>%s</strong>', 'authy' ), $user_data->user_login ); ?></p>
-
-                          <p class="submit">
-                            <input name="Disable" type="submit" value="<?php esc_attr_e( 'Disable Authy' );?>" class="button-primary">
-                          </p>
-
-                          <input type="hidden" name="authy_step" value="disable" />
-                          <?php wp_nonce_field( $this->users_key . '_ajax_disable' );
-                        } else {
-                          if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_check' ) ) {
+                <?php
+                    if ( !$is_disabling ) {
+                        if ( $this->user_has_authy_id( $user_id ) ) {
+                          render_disable_authy_on_modal( $this->users_key, $username );
+                          exit();
+                        }
+                        elseif ( $is_enabling )
+                        {
                             $email = sanitize_email( $user_data->user_email );
-                            $phone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
+                            $cellphone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
                             $country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
 
-                            $response = $this->api->register_user( $email, $phone, $country_code );
+                            $response = $this->api->register_user( $email, $cellphone, $country_code );
 
                             if ( $response->success == 'true' ) {
-                              $this->register_authy_user( $user_id, $email, $phone, $country_code, $response->user->id );
+                                $this->register_authy_user( $user_id, $email, $cellphone, $country_code, $response->user->id );
 
-                              if ( $this->user_has_authy_id( $user_id ) ) { ?>
-                                <p><?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
-
-                                <p>
-                                  <?php _e( "We've sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we'll automatically send you a text-message to your cellphone ", 'authy' ); ?>
-                                  <strong><?php echo esc_attr( $phone ); ?></strong>
-                                  <?php _e( 'on every login with the token that you need to use for when you login.', 'authy' ); ?>
-                                </p>
-
-                                <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-                                <?php
-                              } else { ?>
-                                <p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $user_data->user_login ); ?></p>
-
-                                <p><?php _e( 'Please try again later.', 'authy' ); ?></p>
-
-                                <p><a class="button button-primary" href="<?php echo esc_url( $this->get_ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a></p>
-                                <?php
-                              }
-                              exit;
+                                if ( $this->user_has_authy_id( $user_id ) ) {
+                                    render_confirmation_authy_enabled( $username, $cellphone );
+                                } else {
+                                    render_error_when_authy_enable_failed( $username, $this->get_ajax_url() );
+                                }
+                                exit();
                             } else {
-                              if ( isset( $response->errors ) ) {
-                                $errors = get_object_vars( $response->errors );
-                              } else {
                                 $errors = $response;
-                              }
+                                if ( isset( $response->errors ) ) {
+                                    $errors = get_object_vars( $response->errors );
+                                }
                             }
-                          } ?>
-
-                          <p><?php printf( __( 'Authy is not yet configured for your the <strong>%s</strong> account.', 'authy' ), $user_data->user_login ); ?></p>
-
-                          <p><?php _e( 'To enable Authy for this account, complete the form below, then click <em>Continue</em>.', 'authy' ); ?></p>
-
-                          <?php
-                            if ( !empty($errors) ) { ?>
-                              <div class='error'><?php
-                                foreach ( $errors as $key => $value ) {
-                                  if ( $key == 'country_code' ) {
-                                    ?><p><strong>Country code</strong> is not valid.</p><?php
-                                  } elseif ( $key != 'message' ) {
-                                    ?><p><strong><?php echo esc_attr( ucfirst( $key ) ); ?></strong><?php echo ' ' . $value; ?></p><?php
-                                  }
-                                }?>
-                              </div><?php
-                            }
-                            register_form_with_js( $this->users_key, $authy_data ); // Display form modal for enable authy
-                          }
-
-                        break;
-
-                      case 'disable' :
-                        if ( isset( $_POST['_wpnonce'] ) && wp_verify_nonce( $_POST['_wpnonce'], $this->users_key . '_ajax_disable' ) )
-                          $this->clear_authy_data( $user_id );?>
-
-                        <p><?php echo esc_attr_e( 'Authy was disabled', 'authy' );?></p>
-                        <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-                        <?php
-                          exit;
-
+                        }
+                        form_enable_on_modal( $this->users_key, $username, $authy_data, $errors );
+                    } else {
+                        $this->clear_authy_data( $user_id );
+                        render_confirmation_authy_disabled();
                         wp_safe_redirect( $this->get_ajax_url() );
-                        exit;
-
-                        break;
+                        exit();
                     }
-                  ?>
+                ?>
                 </form>
-              </div>
-          </body>
-      <?php
-
-      exit;
+            </div>
+        </body>
+        <?php
+        exit;
     }
 
     /**
