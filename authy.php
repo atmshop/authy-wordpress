@@ -612,7 +612,7 @@ class Authy {
         foreach ( array( 'email', 'phone', 'country_code', 'authy_id', 'force_by_admin' ) as $attr ) {
             if ( isset( $authy_data[ $attr ] ) ) {
                 $data_sanitized[ $attr ] = $authy_data[ $attr ];
-            } else {
+            } elseif ( isset( $data[ $attr ] ) ) {
                 $data_sanitized[ $attr ] = $data[ $attr ];
             }
         }
@@ -886,49 +886,45 @@ class Authy {
 
                 <form action="<?php echo esc_url( $this->get_ajax_url() ); ?>" method="post">
                 <?php
-                    if ( !$is_disabling ) {
-                        if ( $this->user_has_authy_id( $user_id ) ) {
-                          render_disable_authy_on_modal( $this->users_key, $username );
-                          exit();
-                        }
-                        elseif ( $is_enabling )
-                        {
-                            $email = sanitize_email( $user_data->user_email );
-                            $cellphone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
-                            $country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
-
-                            $response = $this->api->register_user( $email, $cellphone, $country_code );
-
-                            if ( $response->success == 'true' ) {
-                                $this->set_authy_data(array(
-                                    'user_id' => $user_id,
-                                    'email' => $email,
-                                    'phone' => $cellphone,
-                                    'country_code' => $country_code,
-                                    'authy_id' => $response->user->id,
-                                    'force_by_admin' => 'false',
-                                ));
-
-                                if ( $this->user_has_authy_id( $user_id ) ) {
-                                    render_confirmation_authy_enabled( $username, $cellphone );
-                                } else {
-                                    render_error_when_authy_enable_failed( $username, $this->get_ajax_url() );
-                                }
-                                exit();
-                            } else {
-                                $errors = $response;
-                                if ( isset( $response->errors ) ) {
-                                    $errors = get_object_vars( $response->errors );
-                                }
-                            }
-                        }
-                        form_enable_on_modal( $this->users_key, $username, $authy_data, $errors );
-                    } else {
+                    if ( $is_disabling ) {
                         $this->clear_authy_data( $user_id );
                         render_confirmation_authy_disabled();
-                        wp_safe_redirect( $this->get_ajax_url() );
                         exit();
                     }
+
+                    if ( $this->user_has_authy_id( $user_id ) ) {
+                      render_disable_authy_on_modal( $this->users_key, $username );
+                      exit();
+                    }
+                    elseif ( $is_enabling )
+                    {
+                        $email = sanitize_email( $user_data->user_email );
+                        $cellphone = isset( $_POST['authy_phone'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_phone'] ) : false;
+                        $country_code = isset( $_POST['authy_country_code'] ) ? preg_replace( '#[^\d]#', '', $_POST['authy_country_code'] ) : false;
+
+                        $response = $this->api->register_user( $email, $cellphone, $country_code );
+
+                        if ( $response->success == 'true' ) {
+                            $this->set_authy_data(array(
+                                'user_id' => $user_id,
+                                'email' => $email,
+                                'phone' => $cellphone,
+                                'country_code' => $country_code,
+                                'authy_id' => $response->user->id,
+                                'force_by_admin' => 'false',
+                            ));
+
+                            $authy_id = $this->user_has_authy_id( $user_id );
+                            render_confirmation_authy_enabled( $authy_id, $username, $cellphone, $this->get_ajax_url() );
+                            exit();
+                        }
+
+                        $errors = $response;
+                        if ( isset( $response->errors ) ) {
+                            $errors = get_object_vars( $response->errors );
+                        }
+                    }
+                    form_enable_on_modal( $this->users_key, $username, $authy_data, $errors );
                 ?>
                 </form>
             </div>
@@ -1011,13 +1007,12 @@ class Authy {
         elseif ( !empty( $authy_user_info['force_enable_authy'] ) && $authy_user_info['force_enable_authy'] == 'true' )
         {
             // Force the user to enable authy 2FA on next login.
-            $data = array();
-            $data[ $this->api_key ] = array('force_by_admin' => 'true');
-            update_user_meta( $user_id, $this->users_key, $data );
+            update_user_meta( $user_id, $this->users_key, array( $this->api_key => array( 'force_by_admin' => 'true' ) ) );
         }
-        else
+        elseif ( empty( $country_code) && empty( $cellphone ) && empty( $authy_user_info['force_enable_authy'] ) )
         {
-            $this->clear_authy_data( $user_id );
+           // Disable force the user enable authy on next login
+            update_user_meta( $user_id, $this->users_key, array( $this->api_key => array( 'force_by_admin' => 'false' ) ) );
         }
     }
 

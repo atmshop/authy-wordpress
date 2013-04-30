@@ -330,34 +330,28 @@ function render_disable_authy_on_modal( $users_key, $username ) { ?>
 }
 
 /**
- *
- */
-function render_error_when_authy_enable_failed( $username, $ajax_url ) { ?>
-  <p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $username ); ?></p>
-  <p><?php _e( 'Please try again later.', 'authy' ); ?></p>
-  <p>
-    <a class="button button-primary" href="<?php echo esc_url( $ajax_url ); ?>"><?php _e( 'Try again', 'authy' ); ?></a>
-  </p>
-
-<?php }
-
-/**
  * Confirmation when the user enables Authy.
  * @return string
  */
-function render_confirmation_authy_enabled( $username, $cellphone) { ?>
-  <p>
-    <?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $username ); ?>
-  </p>
-  <p>
+function render_confirmation_authy_enabled( $authy_id, $username, $cellphone, $ajax_url ) {
+  if ( $authy_id ) : ?>
+    <p>
+      <?php printf( __( 'Congratulations, Authy is now configured for <strong>%s</strong> user account.', 'authy' ), $username ); ?>
+    </p>
+    <p>
       <?php _e( "We've sent you an e-mail and text-message with instruction on how to install the Authy App. If you do not install the App, we'll automatically send you a text-message to your cellphone ", 'authy' ); ?>
       <strong><?php echo esc_attr( $cellphone ); ?></strong>
       <?php _e( 'on every login with the token that you need to use for when you login.', 'authy' ); ?>
-  </p>
-
-  <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
-
-<?php }
+    </p>
+    <p><a class="button button-primary" href="#" onClick="self.parent.tb_remove();return false;"><?php _e( 'Return to your profile', 'authy' ); ?></a></p>
+  <?php else : ?>
+    <p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $username ); ?></p>
+    <p><?php _e( 'Please try again later.', 'authy' ); ?></p>
+    <p>
+      <a class="button button-primary" href="<?php echo esc_url( $ajax_url ); ?>"><?php _e( 'Try again', 'authy' ); ?></a>
+    </p>
+  <?php endif;
+}
 
 /**
  * Confirmation when the user disables Authy.
