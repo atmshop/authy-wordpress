@@ -332,11 +332,11 @@ function render_disable_authy_on_modal( $users_key, $username ) { ?>
 /**
  *
  */
-function render_error_when_authy_enable_failed( $username, $ajax_url) { ?>
+function render_error_when_authy_enable_failed( $username, $ajax_url ) { ?>
   <p><?php printf( __( 'Authy could not be activated for the <strong>%s</strong> user account.', 'authy' ), $username ); ?></p>
   <p><?php _e( 'Please try again later.', 'authy' ); ?></p>
   <p>
-    <a class="button button-primary" href="<?php echo esc_url( $ajax_url() ); ?>"><?php _e( 'Try again', 'authy' ); ?></a>
+    <a class="button button-primary" href="<?php echo esc_url( $ajax_url ); ?>"><?php _e( 'Try again', 'authy' ); ?></a>
   </p>
 
 <?php }

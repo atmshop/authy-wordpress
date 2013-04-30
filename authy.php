@@ -74,7 +74,7 @@ class Authy {
         'phone'        => null,
         'country_code' => '+1',
         'authy_id'     => null,
-        'forced_by_admin' => 'false',
+        'force_by_admin' => 'false',
     );
 
     /**
@@ -563,39 +563,34 @@ class Authy {
      */
 
     public function register_authy_user( $user_params = array() ) {
-         foreach( array("user_id", "email", "phone", "country_code", "forced_by_admin") as $required_field ) {
-            if(!isset($authy_data[$required_field])) {
+        foreach( array( "user_id", "email", "phone", "country_code", "force_by_admin" ) as $required_field ) {
+            if ( !isset( $user_params[$required_field] ) ) {
                 assert("Missing field : ".$required_field);
-                return;
+                return false;
             }
-         }
+        }
 
-         $response = $this->api->register_user( $email, $phone, $country_code );
-         if ( $response->user && $response->user->id ) {
-             $user_params["authy_id"] = $response->user->id;
-             return set_authy_data($user_params)
-         }
+        $response = $this->api->register_user( $user_params['email'], $user_params['phone'], $user_params['country_code'] );
+        if ( $response->user && $response->user->id ) {
+          $user_params["authy_id"] = $response->user->id;
+          return $this->set_authy_data( $user_params );
+        }
 
-         return false;
+        return false;
     }
 
     /**
      * Add Authy data to a given user account
      *
      * @param int $user_id
-     * @param string $email
-     * @param string $phone
-     * @param string $country_code
-     * @param string $forced_by_admin
+     * @param array $authy_data
      * @uses this::user_has_authy_id, this::api::get_id, wp_parse_args, this::clear_authy_data, get_user_meta, update_user_meta
      * @return null
      */
     public function set_authy_data( $authy_data = array() ) {
-        foreach( array("user_id", "email", "phone", "country_code", "forced_by_admin") as $required_field ) {
-            if(!isset($authy_data[$required_field])) {
-                assert("Missing field : ".$required_field);
-                return;
-            }
+        if(!isset($authy_data["user_id"])) {
+            assert("Missing field : user_id");
+            return;
         }
 
         // Retrieve user's existing Authy ID
@@ -608,23 +603,23 @@ class Authy {
             return false;
         }
 
-        // Build array of Authy data
-        $data_sanitized = array(
-            'email'          => $authy_data['email'],
-            'phone'          => $authy_data['phone'],
-            'country_code'   => $authy_data['country_code'],
-            'authy_id'       => $authy_data['authy_id'],
-            'forced_by_admin' => $authy_data['forced_by_admin'],
-        );
-
-        $data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
         $data = get_user_meta( $authy_data['user_id'], $this->users_key, true );
         if ( ! is_array( $data ) ) {
             $data = array();
         }
 
+        $data_sanitized = array();
+        foreach ( array( 'email', 'phone', 'country_code', 'authy_id', 'force_by_admin' ) as $attr ) {
+            if ( isset( $authy_data[ $attr ] ) ) {
+                $data_sanitized[ $attr ] = $authy_data[ $attr ];
+            } else {
+                $data_sanitized[ $attr ] = $data[ $attr ];
+            }
+        }
+
+        $data_sanitized = wp_parse_args( $data_sanitized, $this->user_defaults );
         $data[ $this->api_key ] = $data_sanitized;
-        update_user_meta( $user_id, $this->users_key, $data );
+        update_user_meta( $authy_data['user_id'], $this->users_key, $data );
         return true;
     }
 
@@ -705,7 +700,7 @@ class Authy {
     protected function with_forced_by_admin( $user_id ) {
         $data = $this->get_authy_data( $user_id );
 
-        if ( $data['forced_by_admin'] == 'true' ) {
+        if ( $data['force_by_admin'] == 'true' ) {
             return true;
         }
 
@@ -751,8 +746,8 @@ class Authy {
                 "user_id" => $user_id,
                 "email" => $email,
                 "phone" => $phone,
-                "country_code" => $country_code
-                "forced_by_admin" => false
+                "country_code" => $country_code,
+                "force_by_admin" => false,
             ));
         } elseif ( $is_disabling ) {
             // Delete Authy usermeta if requested
@@ -906,11 +901,12 @@ class Authy {
 
                             if ( $response->success == 'true' ) {
                                 $this->set_authy_data(array(
-                                    "user_id" => $user_id,
-                                    "email" => $email,
-                                    "phone" => $phone,
-                                    "country_code" => $country_code,
-                                    "authy_id" => $response->user->id,
+                                    'user_id' => $user_id,
+                                    'email' => $email,
+                                    'phone' => $cellphone,
+                                    'country_code' => $country_code,
+                                    'authy_id' => $response->user->id,
+                                    'force_by_admin' => 'false',
                                 ));
 
                                 if ( $this->user_has_authy_id( $user_id ) ) {
@@ -1007,16 +1003,16 @@ class Authy {
             $this->register_authy_user(array(
               "user_id" => $user_id,
               "email" => $email,
-              "cellphone" => $cellphone,
+              "phone" => $cellphone,
               "country_code" => $country_code,
-              "forced_by_admin" => 'true'
+              "force_by_admin" => 'true'
             ));
         }
         elseif ( !empty( $authy_user_info['force_enable_authy'] ) && $authy_user_info['force_enable_authy'] == 'true' )
         {
             // Force the user to enable authy 2FA on next login.
             $data = array();
-            $data[ $this->api_key ] = array('forced_by_admin' => 'true');
+            $data[ $this->api_key ] = array('force_by_admin' => 'true');
             update_user_meta( $user_id, $this->users_key, $data );
         }
         else
@@ -1203,7 +1199,7 @@ class Authy {
                 "email" => $userWP->user_email,
                 "phone" => $data_temp['cellphone'],
                 "country_code" => $data_temp['country_code'],
-                "forced_by_admin" => 'true',
+                "force_by_admin" => 'true',
                 "authy_id" => $authy_id
             ));
 
