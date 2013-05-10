@@ -205,7 +205,7 @@ class Authy_API {
   public function curl_ca_certificates() {
     $response = wp_remote_get('https://api.authy.com');
 
-    $pattern = '/Peer certificate cannot be authenticated with known CA certificates/';
+    $pattern = '/SSL certificate problem/';
 
     if ( isset($response->errors['http_request_failed']) ) {
       if ( preg_match($pattern, $response->errors['http_request_failed'][0]) ) {
