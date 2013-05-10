@@ -52,7 +52,15 @@ function authy_token_form( $username, $user_data, $user_signature, $redirect ) {
         <h3 style="text-align: center; margin-bottom:10px;">Authy Two-Factor Authentication</h3>
         <p class="message">
           <?php _e( "You can get this token from the Authy mobile app. If you are not using the Authy app we've automatically sent you a token via text-message to cellphone number: ", 'authy' ); ?>
-          <strong><?php echo esc_attr( $user_data['phone'] ); ?></strong>
+          <strong>
+            <?php
+              $cellphone = normalize_cellphone( $user_data['phone'] );
+              $cellphone = preg_replace( "/^\d{1,3}\-/", 'XXX-', $cellphone );
+              $cellphone = preg_replace( "/\-\d{1,3}\-/", '-XXX-', $cellphone );
+
+              echo esc_attr( $cellphone );
+            ?>
+          </strong>
         </p>
 
         <form method="POST" id="authy" action="wp-login.php">
@@ -364,5 +372,21 @@ function render_confirmation_authy_disabled(  ) { ?>
       </a>
   </p>
 <?php }
+
+/**
+ * Normalize cellphone
+ * given a cellphone return the normal form
+ * 17654305034 -> 765-430-5034
+ * normal form: 10 digits, {3}-{3}-{4}
+ * @param string $cellphone
+ * @return string
+ */
+function normalize_cellphone( $cellphone ) {
+  $cellphone = substr( $cellphone, 0, -4 ) . '-' . substr( $cellphone, -4 );
+  if ( strlen( $cellphone ) - 5 > 3 ) {
+    $cellphone = substr( $cellphone, 0, -8 ) . '-' . substr( $cellphone, -8 );
+  }
+  return $cellphone;
+}
 
 // closing the last tag is not recommended: http://php.net/basic-syntax.instruction-separation
