@@ -4,7 +4,7 @@
  * Plugin URI: https://github.com/authy/authy-wordpress
  * Description: Add <a href="http://www.authy.com/">Authy</a> two-factor authentication to WordPress.
  * Author: Authy Inc
- * Version: 2.1
+ * Version: 2.2
  * Author URI: https://www.authy.com
  * License: GPL2+
  * Text Domain: authy
