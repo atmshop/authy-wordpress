@@ -154,7 +154,7 @@ function register_form_on_profile( $users_key, $user_data ) {?>
  * Form disable authy on profile
  * @return string
  */
-function disable_form_on_profile( $users_key ) {?>
+function disable_form_on_profile( $users_key, $app_password ) {?>
   <table class="form-table" id="<?php echo esc_attr( $users_key ); ?>">
     <tr>
       <th><label for="<?php echo esc_attr( $users_key ); ?>_disable"><?php _e( 'Disable Two Factor Authentication?', 'authy' ); ?></label></th>
@@ -163,6 +163,41 @@ function disable_form_on_profile( $users_key ) {?>
         <label for="<?php echo esc_attr( $users_key ); ?>_disable"><?php _e( 'Yes, disable Authy for your account.', 'authy' ); ?></label>
 
         <?php wp_nonce_field( $users_key . 'disable_own', $users_key . '[nonce]' ); ?>
+      </td>
+    </tr>
+    <tr>
+      <td colspan="2">
+        <p style="font-style: italic; font-size: 14px; font-weight: bold;"><?php _e( 'Application specific password', 'authy' ); ?></p>
+        <p><?php _e( 'The application specific password is for apps are not compatible with Two Factor Authentication', 'authy' ); ?></p>
+      </td>
+    </tr>
+    <?php if ( !empty( $app_password ) ) {
+      $array_pass = str_split($app_password, 4);
+      $label = 'Regenerate the password:';
+    ?>
+      <tr>
+        <th>
+          <label for="<?php echo esc_attr( $users_key ); ?>_regenerate_password">
+            <?php _e( 'Your application specific password:', 'authy' ); ?>
+          </label>
+        </th>
+        <td style="font-size: 16px;">
+          <?php echo esc_attr( $array_pass[0] . '   '  . $array_pass[1] . '   '  . $array_pass[2] . '   '  . $array_pass[3] ); ?>
+        </td>
+      </tr>
+    <?php } else {
+      $label = 'Generate the password:';
+    } ?>
+
+    <tr>
+      <th>
+        <label for="<?php echo esc_attr( $users_key ); ?>_specific_password">
+          <?php _e( $label, 'authy' ); ?>
+        </label>
+      </th>
+      <td>
+        <input type="checkbox" id="<?php echo esc_attr( $users_key ); ?>_specific_password" name="<?php echo esc_attr( $users_key ); ?>[specific_password]" value="1" />
+        <?php wp_nonce_field( $users_key . 'specific_password', $users_key . '[nonce]' ); ?>
       </td>
     </tr>
   </table>

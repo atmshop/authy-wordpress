@@ -25,6 +25,7 @@ Foundation, Inc., 51 Franklin St, Fifth Floor, Boston, MA  02110-1301  USA
 */
 
 require_once 'helpers.php';
+require_once 'authy-methods.php';
 
 class Authy {
     /**
@@ -56,6 +57,7 @@ class Authy {
     protected $users_key = 'authy_user';
     protected $signature_key = 'user_signature';
     protected $authy_data_temp_key = 'authy_data_temp';
+    protected $specific_password_key = 'authy_app_password';
 
     // Settings field placeholders
     protected $settings_fields = array();
@@ -116,7 +118,7 @@ class Authy {
         // Plugin settings
         add_action( 'admin_init', array( $this, 'action_admin_init' ) );
         add_action( 'admin_menu', array( $this, 'action_admin_menu' ) );
-        add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
+        // add_action( 'admin_enqueue_scripts', array( $this, 'action_admin_enqueue_scripts' ) );
 
         add_filter( 'plugin_action_links', array( $this, 'filter_plugin_action_links' ), 10, 2 );
 
@@ -548,7 +550,7 @@ class Authy {
                 ?>
                     <h3><?php echo esc_html( $this->name ); ?></h3>
                 <?php
-                echo disable_form_on_profile( $this->users_key );
+                echo disable_form_on_profile( $this->users_key, get_app_password( $user->ID ) );
             }
         } elseif ( $this->available_authy_for_role( $user ) ) {
             ?>
@@ -727,6 +729,7 @@ class Authy {
 
         $is_editing = wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'edit_own' );
         $is_disabling = wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'disable_own' ) && isset( $authy_data['disable_own'] );
+        $generate_password = wp_verify_nonce( $authy_data['nonce'], $this->users_key . 'specific_password' ) && isset( $authy_data['specific_password'] );
 
         if ( $is_editing ) {
             // Email address
@@ -752,6 +755,9 @@ class Authy {
         } elseif ( $is_disabling ) {
             // Delete Authy usermeta if requested
             $this->clear_authy_data( $user_id );
+        } elseif ( $generate_password ) {
+            // Generate password for apps can't support 2FA
+            generate_app_specific_password( $user_id );
         }
     }
 
@@ -1227,7 +1233,12 @@ class Authy {
     public function authenticate_user( $user = '', $username = '', $password = '' ) {
         // If XMLRPC_REQUEST is disabled stop
         if ( ( defined( 'XMLRPC_REQUEST' ) && XMLRPC_REQUEST ) || ( defined( 'APP_REQUEST' ) && APP_REQUEST ) ) {
-            return $user;
+            $userWP = get_user_by( 'login', $username );
+            if ( $this->user_has_authy_id( $userWP->ID ) ) {
+                return authenticate_for_xml_rpc( $userWP, $password );
+            } else {
+                return $user;
+            }
         }
 
         $step = $_POST['step'];
