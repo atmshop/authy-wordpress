@@ -216,8 +216,17 @@ class Authy {
      * @return null
      */
     public function action_admin_menu() {
-        add_options_page( $this->name, 'Authy', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
-        add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
+        $show_settings = false;
+        $can_admin_network = is_plugin_active_for_network( 'authy-two-factor-authentication/authy.php' ) && current_user_can( 'network_admin' );
+
+        if ( $can_admin_network || current_user_can( 'edit_plugins' ) ) {
+            $show_settings = true;
+        }
+
+        if ( $show_settings ) {
+            add_options_page( $this->name, 'Authy', 'manage_options', $this->settings_page, array( $this, 'plugin_settings_page' ) );
+            add_settings_section( 'default', '', array( $this, 'register_settings_page_sections' ), $this->settings_page );
+        }
     }
 
     /**
