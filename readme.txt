@@ -3,7 +3,7 @@ Contributors: authy, ethitter
 Tags: authentication, authy, two factor, security, login, authenticate
 Requires at least: 3.0
 Tested up to: 3.5
-Stable tag: 2.2
+Stable tag: 2.3
 License: GPLv2 or later
 License URI: http://www.gnu.org/licenses/gpl-2.0.html
 
@@ -41,6 +41,9 @@ As an admin you can go to users page. Then select the user in the list and click
 1. Authy Two-Factor Authentication page.
 
 == Changelog ==
+
+= 2.3 =
+* Hide the authy settings page for other users except for super admin (multisite)
 
 = 2.2 =
 * Hide some digits of the cellphone
